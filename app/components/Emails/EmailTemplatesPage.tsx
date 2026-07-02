@@ -133,7 +133,7 @@ export default function EmailTemplatesPage() {
 
       {/* Preview Section */}
       <section className="panel wide" style={{ display: "grid", gap: "16px" }}>
-        <div style={{ display: "flex", justifyContent: "between", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h3 style={{ margin: 0, fontFamily: '"Source Serif 4", Georgia, serif', color: "var(--primary)", fontSize: "20px" }}>
             Vista Previa del Mensaje
           </h3>

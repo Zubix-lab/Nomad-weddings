@@ -272,6 +272,28 @@ input {
   font-weight: 600;
 }
 
+.loading-panel {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  min-height: calc(100vh - 48px);
+  color: var(--slate-grey);
+  text-align: center;
+}
+
+.loading-panel h2 {
+  margin: 0;
+  color: var(--primary);
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 34px;
+  font-weight: 600;
+}
+
+.loading-panel p {
+  margin: 0;
+}
+
 .panel-action,
 .metric-icon {
   display: grid;
@@ -601,6 +623,76 @@ dd {
   white-space: pre-wrap;
   background: var(--surface-low);
   border-radius: 8px;
+}
+
+.event-select {
+  width: min(340px, 100%);
+}
+
+.spin-icon {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.agent-demo-grid {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.agent-demo-actions {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.agent-demo-actions .secondary-button {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.agent-demo-output {
+  min-height: 260px;
+  overflow: hidden;
+  background: var(--surface-low);
+  border: 1px solid var(--outline-variant);
+  border-radius: 8px;
+}
+
+.agent-demo-output-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  color: var(--primary);
+  background: var(--pure-white);
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.agent-demo-output-header span {
+  color: var(--slate-grey);
+  font-size: 12px;
+}
+
+.agent-demo-output pre {
+  max-height: 360px;
+  margin: 0;
+  overflow: auto;
+  padding: 14px;
+  color: var(--on-surface-variant);
+  white-space: pre-wrap;
+  font: 12px/1.55 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+}
+
+.empty-state.compact {
+  min-height: 260px;
+  padding: 18px;
 }
 
 .budget-total {
@@ -1382,7 +1474,8 @@ dd {
   .simulator-hero,
   .simulator-intro,
   .location-band,
-  .simulator-layout {
+  .simulator-layout,
+  .agent-demo-grid {
     grid-template-columns: 1fr;
   }
 

@@ -20,10 +20,10 @@ export function Header({ activeEventId, setActiveEventId, events, title }: Heade
       </div>
       <div className="topbar-actions">
         <select
+          className="event-select"
           value={activeEventId}
           onChange={(e) => setActiveEventId(e.target.value)}
           aria-label="Evento activo"
-          style={{ width: "240px" }}
         >
           {events.map((event) => (
             <option key={event.id} value={event.id}>

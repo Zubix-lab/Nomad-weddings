@@ -16,7 +16,11 @@ import {
   tasks as seedTasks,
   calendarItems as seedCalendarItems,
   documents as seedDocuments,
-  communications as seedCommunications
+  communications as seedCommunications,
+  parejaProfiles as seedParejaProfiles,
+  reuniones as seedReuniones,
+  checklistItems as seedChecklistItems,
+  emailRecords as seedEmailRecords
 } from "@/lib/seed";
 
 // --------------- helpers ---------------
@@ -41,6 +45,27 @@ function save<T>(key: string, data: T[]): void {
   try {
     localStorage.setItem(key, JSON.stringify(data));
   } catch { /* quota exceeded — silently fail */ }
+}
+
+function mergeSeedVendorImages(storedVendors: Vendor[]): Vendor[] {
+  const seedById = new Map(seedVendors.map((vendor) => [vendor.id, vendor]));
+  let changed = false;
+
+  const next = storedVendors.map((vendor) => {
+    const seedVendor = seedById.get(vendor.id);
+    if (!seedVendor?.images?.length) return vendor;
+
+    const currentImages = vendor.images || [];
+    const mergedImages = [...seedVendor.images, ...currentImages].filter((url, index, all) => all.indexOf(url) === index);
+    const sameImages = mergedImages.length === currentImages.length && mergedImages.every((url, index) => url === currentImages[index]);
+
+    if (sameImages) return vendor;
+    changed = true;
+    return { ...vendor, images: mergedImages };
+  });
+
+  if (changed) save(STORAGE_KEYS.vendors, next);
+  return next;
 }
 
 // --------------- state ---------------
@@ -70,6 +95,8 @@ type Action =
   | { type: "UPDATE"; collection: CollectionKey; item: Record<string, unknown> }
   | { type: "DELETE"; collection: CollectionKey; id: string };
 
+type IdentifiableRecord = Record<string, unknown> & { id: string };
+
 const STORAGE_PREFIX = "nomad_";
 
 const STORAGE_KEYS: Record<CollectionKey, string> = {
@@ -95,21 +122,26 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...action.state, initialized: true };
 
     case "ADD": {
-      const current = state[action.collection] as any[];
-      const next = [...current, action.item];
+      const current = state[action.collection] as unknown as IdentifiableRecord[];
+      const incomingId = (action.item as { id?: string }).id;
+      const existingIndex = incomingId ? current.findIndex((item) => item.id === incomingId) : -1;
+      const next =
+        existingIndex >= 0
+          ? current.map((item, index) => (index === existingIndex ? action.item : item))
+          : [...current, action.item];
       save(STORAGE_KEYS[action.collection], next);
       return { ...state, [action.collection]: next };
     }
 
     case "UPDATE": {
-      const current = state[action.collection] as any[];
+      const current = state[action.collection] as unknown as IdentifiableRecord[];
       const next = current.map((i) => (i.id === (action.item as { id: string }).id ? action.item : i));
       save(STORAGE_KEYS[action.collection], next);
       return { ...state, [action.collection]: next };
     }
 
     case "DELETE": {
-      const current = state[action.collection] as any[];
+      const current = state[action.collection] as unknown as IdentifiableRecord[];
       const next = current.filter((i) => i.id !== action.id);
       save(STORAGE_KEYS[action.collection], next);
       return { ...state, [action.collection]: next };
@@ -194,16 +226,6 @@ const EMPTY_STATE: AppState = {
   initialized: false,
 };
 
-// Try to import new seed data (may not exist yet)
-let seedParejaProfiles: ParejaProfile[] = [];
-let seedReuniones: Reunion[] = [];
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const seedModule = require("@/lib/seed");
-  if (seedModule.parejaProfiles) seedParejaProfiles = seedModule.parejaProfiles;
-  if (seedModule.reuniones) seedReuniones = seedModule.reuniones;
-} catch { /* seed extensions not yet available */ }
-
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, EMPTY_STATE);
 
@@ -215,7 +237,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         leads: load<Lead>(STORAGE_KEYS.leads, seedLeads),
         clients: load<Client>(STORAGE_KEYS.clients, seedClients),
         events: load<Event>(STORAGE_KEYS.events, seedEvents),
-        vendors: load<Vendor>(STORAGE_KEYS.vendors, seedVendors),
+        vendors: mergeSeedVendorImages(load<Vendor>(STORAGE_KEYS.vendors, seedVendors)),
         vendorPrices: load<VendorPrice>(STORAGE_KEYS.vendorPrices, seedVendorPrices),
         eventServices: load<EventService>(STORAGE_KEYS.eventServices, seedEventServices),
         tasks: load<Task>(STORAGE_KEYS.tasks, seedTasks),
@@ -224,8 +246,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         communications: load<Communication>(STORAGE_KEYS.communications, seedCommunications),
         parejaProfiles: load<ParejaProfile>(STORAGE_KEYS.parejaProfiles, seedParejaProfiles),
         reuniones: load<Reunion>(STORAGE_KEYS.reuniones, seedReuniones),
-        checklistItems: load<ChecklistItemRecord>(STORAGE_KEYS.checklistItems, []),
-        emailRecords: load<EmailRecord>(STORAGE_KEYS.emailRecords, []),
+        checklistItems: load<ChecklistItemRecord>(STORAGE_KEYS.checklistItems, seedChecklistItems),
+        emailRecords: load<EmailRecord>(STORAGE_KEYS.emailRecords, seedEmailRecords),
       },
     });
   }, []);

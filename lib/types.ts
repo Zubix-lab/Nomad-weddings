@@ -5,6 +5,15 @@ export type ServiceStatus = "pendiente" | "propuesto" | "reservado" | "contratad
 export type TaskStatus = "pendiente" | "en-curso" | "bloqueada" | "hecha";
 export type CalendarKind = "reunion" | "visita-tecnica" | "pago" | "deadline" | "dia-b";
 export type UserRole = "admin" | "colaborador" | "lectura";
+export type VendorStatus = "draft" | "reviewed" | "verified" | "outdated";
+export type VendorAvailabilityType = "local" | "se-desplaza" | "remoto";
+export type VendorPriceConfidence = "alta" | "media" | "baja";
+
+export interface VendorPackage {
+  name: "basico" | "estandar" | "premium" | string;
+  priceFrom?: number;
+  description?: string;
+}
 
 export interface Lead {
   id: string;
@@ -56,19 +65,37 @@ export interface Vendor {
   name: string;
   category: string;
   region: string;
+  province?: string;
+  city?: string;
+  serviceArea?: string;
   phone: string;
   email: string;
   website: string;
+  contactUrl?: string;
+  sourceUrl?: string;
+  instagramUrl?: string;
+  googleMapsUrl?: string;
   capacity: number;
   styleTags: string[];
+  languages?: string[];
+  availabilityType?: VendorAvailabilityType;
+  packages?: VendorPackage[];
+  priceFrom?: number;
+  priceRange?: string;
+  priceConfidence?: VendorPriceConfidence;
   reliability: number;
   responseTimeHours: number;
   previousExperience: number;
   qualityScore: number;
   commissionFree: boolean;
   notes: string;
+  reviewsSummary?: string;
+  notesInternal?: string;
+  status?: VendorStatus;
+  lastCheckedAt?: string;
   lat?: number;
   lng?: number;
+  googlePlaceId?: string;
   images?: string[];
 }
 

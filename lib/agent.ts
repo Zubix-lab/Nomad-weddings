@@ -214,7 +214,8 @@ export function detectCalendarConflicts(items: CalendarItem[] = calendarItems) {
 
 function getAlerts(event: Event, upcoming: CalendarItem[]) {
   const missing = eventServices.filter((service) => service.eventId === event.id && !service.vendorId);
-  const overdue = tasks.filter((task) => task.eventId === event.id && task.status !== "hecha" && new Date(task.dueDate) < new Date("2026-06-30"));
+  const today = startOfDay(new Date());
+  const overdue = tasks.filter((task) => task.eventId === event.id && task.status !== "hecha" && new Date(task.dueDate) < today);
   const conflicts = detectCalendarConflicts(upcoming);
   return [
     ...missing.map((service) => `Servicio pendiente de proveedor: ${service.category}`),
@@ -228,7 +229,11 @@ function average(min: number, max: number) {
 }
 
 function daysUntil(date: string) {
-  return Math.ceil((new Date(date).getTime() - new Date("2026-06-30").getTime()) / 86_400_000);
+  return Math.ceil((new Date(date).getTime() - startOfDay(new Date()).getTime()) / 86_400_000);
+}
+
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 function byDate(a: CalendarItem, b: CalendarItem) {

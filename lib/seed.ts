@@ -5,6 +5,8 @@ import type {
   DocumentRecord,
   Event,
   EventService,
+  ChecklistItemRecord,
+  EmailRecord,
   Lead,
   Task,
   Vendor,
@@ -110,7 +112,8 @@ export const vendors: Vendor[] = [
     "lat": 43.3146,
     "lng": -1.9972,
     "images": [
-      "https://images.unsplash.com/photo-1546483875-c9679f225eb5?w=800&auto=format&fit=crop&q=80",
+      "https://www.destinoseuskadi.com/wp-content/uploads/2016/11/xmiramar.jpg.pagespeed.ic.aHw1PbJVlg.webp",
+      "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1564507592333-c60657eea523?w=800&auto=format&fit=crop&q=80"
     ]
   },
@@ -138,6 +141,7 @@ export const vendors: Vendor[] = [
     "lat": 43.3224,
     "lng": -1.9796,
     "images": [
+      "https://cache.marriott.com/content/dam/marriott-renditions/EASLC/easlc-exterior-4353-hor-wide.jpg",
       "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&auto=format&fit=crop&q=80"
     ]
@@ -166,6 +170,7 @@ export const vendors: Vendor[] = [
     "lat": 43.275,
     "lng": -2.1285,
     "images": [
+      "https://bodegakatxina.com/wp-content/uploads/2024/01/bodega-katxina-bodas-003-2-1024x683.jpg",
       "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1528254847117-67891fa133b8?w=800&auto=format&fit=crop&q=80"
     ]
@@ -194,6 +199,7 @@ export const vendors: Vendor[] = [
     "lat": 43.2922,
     "lng": -2.2155,
     "images": [
+      "https://www.hoteliturregi.com/wp-content/uploads/2024/01/piscina_01.jpg",
       "https://images.unsplash.com/photo-1508672019048-805c876b67e2?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&auto=format&fit=crop&q=80"
     ]
@@ -222,6 +228,7 @@ export const vendors: Vendor[] = [
     "lat": 43.3636,
     "lng": -1.7914,
     "images": [
+      "https://paradores.es/sites/default/files/images/hondarribia-slide-1_4.jpg",
       "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1582298538104-fe2e74c27f59?w=800&auto=format&fit=crop&q=80"
     ]
@@ -250,6 +257,7 @@ export const vendors: Vendor[] = [
     "lat": 43.3224,
     "lng": -1.8517,
     "images": [
+      "https://usategieta.com/wp-content/uploads/2021/10/Natural-Summer-0042-Usateguieta-2048x1365.jpg",
       "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&auto=format&fit=crop&q=80"
     ]
@@ -278,6 +286,7 @@ export const vendors: Vendor[] = [
     "lat": 43.334,
     "lng": -1.8197,
     "images": [
+      "https://www.hotelurdanibia.com/idb/17052/hotel-001-1200x800.jpg",
       "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80"
     ]
@@ -306,6 +315,7 @@ export const vendors: Vendor[] = [
     "lat": 43.0477,
     "lng": -2.2082,
     "images": [
+      "https://turismo.euskadi.eus/contenidos/a_alojamiento/0000041521_a1_rec_turismo/es_41521/images/FP_dolarea.jpg",
       "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80"
     ]
@@ -334,6 +344,7 @@ export const vendors: Vendor[] = [
     "lat": 43.0444,
     "lng": -2.4264,
     "images": [
+      "https://www.etxeaundi.com/wp-content/uploads/2022/03/el-hotel-generalv2-1024x1024.jpg",
       "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&auto=format&fit=crop&q=80"
     ]
@@ -345,7 +356,7 @@ export const vendors: Vendor[] = [
     "region": "Guipúzcoa",
     "phone": "+34 943 865 100",
     "email": "info@hotelzelai.com",
-    "website": "https://hotelzelai.com/",
+    "website": "https://www.talasoterapiazelai.com/es-ES/index.aspx",
     "capacity": 130,
     "styleTags": [
       "acantilado",
@@ -362,6 +373,7 @@ export const vendors: Vendor[] = [
     "lat": 43.2988,
     "lng": -2.2612,
     "images": [
+      "https://www.talasoterapiazelai.com/images/slides/Talaso-Zelai-Home-Fachada.jpg",
       "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&auto=format&fit=crop&q=80"
     ]
@@ -390,6 +402,7 @@ export const vendors: Vendor[] = [
     "lat": 43.118,
     "lng": -2.408,
     "images": [
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Vergara_%28Guip%C3%BAzcoa%29-Palacio_Ozaeta-1.jpg/1920px-Vergara_%28Guip%C3%BAzcoa%29-Palacio_Ozaeta-1.jpg",
       "https://images.unsplash.com/photo-1541976844346-f18aeac57b06?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1582298538104-fe2e74c27f59?w=800&auto=format&fit=crop&q=80"
     ]
@@ -418,6 +431,7 @@ export const vendors: Vendor[] = [
     "lat": 28.1205,
     "lng": -15.4285,
     "images": [
+      "https://hotelroyal.com.es/data/Photos/Big/17564/1756401/1756401329/Santa-Catalina-A-Royal-Hideaway-Hotel-Gran-Lujo-Las-Palmas-de-Gran-Canaria-Exterior.JPEG",
       "https://images.unsplash.com/photo-1540541338287-41700207dee6?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80"
     ]
@@ -446,6 +460,7 @@ export const vendors: Vendor[] = [
     "lat": 28.4069,
     "lng": -16.5218,
     "images": [
+      "https://cdn0.bodas.net/vendor/2071/3_2/1280/jpg/dsc-0186_1_2071-175008780016560.jpeg",
       "https://images.unsplash.com/photo-1582298538104-fe2e74c27f59?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1562663474-6cbb3fee4c77?w=800&auto=format&fit=crop&q=80"
     ]
@@ -474,6 +489,7 @@ export const vendors: Vendor[] = [
     "lat": 28.0612,
     "lng": -15.5574,
     "images": [
+      "https://media-cdn.tripadvisor.com/media/photo-o/0d/c5/7e/38/finca-de-osorio.jpg",
       "https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=800&auto=format&fit=crop&q=80"
     ]
@@ -502,6 +518,7 @@ export const vendors: Vendor[] = [
     "lat": 43.2722,
     "lng": -1.9172,
     "images": [
+      "https://console.listae.com/files/2015/10/restaurante_mugaritz_exteriores.jpg",
       "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=80"
     ]
@@ -530,6 +547,7 @@ export const vendors: Vendor[] = [
     "lat": 43.3108,
     "lng": -2.0469,
     "images": [
+      "https://akelarre.net/wp-content/uploads/2021/05/AKELARRE-RESERVAR-RESTUARANTE.jpg",
       "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=80"
     ]
@@ -558,6 +576,7 @@ export const vendors: Vendor[] = [
     "lat": 43.303,
     "lng": -2.205,
     "images": [
+      "https://www.restauranteelkano.com/wp-content/uploads/2026/03/restaurante-elkano-mar-de-brasas.jpg",
       "https://images.unsplash.com/photo-1555244162-803834f70033?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&auto=format&fit=crop&q=80"
     ]
@@ -586,6 +605,7 @@ export const vendors: Vendor[] = [
     "lat": 43.2882,
     "lng": -2.1629,
     "images": [
+      "https://fotos.hoteles.net/articulos/hotel-restaurante-karlos-arguinano-zarautz-8581-1.jpg",
       "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=80"
     ]
@@ -614,6 +634,7 @@ export const vendors: Vendor[] = [
     "lat": 43.3444,
     "lng": -1.8124,
     "images": [
+      "https://www.hiruzta.com/wp-content/uploads/2020/11/Hiruzta-bodega.jpg",
       "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1528254847117-67891fa133b8?w=800&auto=format&fit=crop&q=80"
     ]
@@ -642,6 +663,7 @@ export const vendors: Vendor[] = [
     "lat": 43.2907,
     "lng": -1.941,
     "images": [
+      "https://www.sagardoa.eus/img/tmp/manufacturer_12_resized.jpg?time=1782986459",
       "https://images.unsplash.com/photo-1528254847117-67891fa133b8?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1555244162-803834f70033?w=800&auto=format&fit=crop&q=80"
     ]
@@ -670,6 +692,7 @@ export const vendors: Vendor[] = [
     "lat": 43.2858,
     "lng": -1.9607,
     "images": [
+      "https://sansonategi.com/wp-content/uploads/2025/02/sanso.jpg",
       "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&auto=format&fit=crop&q=80"
     ]
@@ -698,6 +721,7 @@ export const vendors: Vendor[] = [
     "lat": 43.2762,
     "lng": -2.3319,
     "images": [
+      "https://www.guiarepsol.com/content/dam/repsol-guia/guia-cf/restaurante/imagenes/media-filer_public-d4-25-d42504ca-6d30-4d94-9748-399402f10d4d-23975-salegi-jatetxea-95f2bffea72b447ca5f35c6200bf5360.jpeg",
       "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=80"
     ]
@@ -726,6 +750,7 @@ export const vendors: Vendor[] = [
     "lat": 43.136,
     "lng": -2.077,
     "images": [
+      "https://www.ondojan.com/images/sobipro/entries/295/img__MG_3969.jpg",
       "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1555244162-803834f70033?w=800&auto=format&fit=crop&q=80"
     ]
@@ -754,6 +779,7 @@ export const vendors: Vendor[] = [
     "lat": 43.1754,
     "lng": -2.2858,
     "images": [
+      "https://www.guide-du-paysbasque.com/_bibli/annonces/8311/hd/kiruri-jatetxea-24-01.png",
       "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&auto=format&fit=crop&q=80"
     ]
@@ -782,6 +808,7 @@ export const vendors: Vendor[] = [
     "lat": 43.2081,
     "lng": -2.4767,
     "images": [
+      "https://ixuahotela.com/wp-content/uploads/entrada-ixua-hotel-1.jpg",
       "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1555244162-803834f70033?w=800&auto=format&fit=crop&q=80"
     ]
@@ -810,6 +837,7 @@ export const vendors: Vendor[] = [
     "lat": 28.112,
     "lng": -15.4244,
     "images": [
+      "https://cdn.website.dish.co/media/a9/c6/1394039/Brasa-Y-Volcan-Imagen3.jpg",
       "https://images.unsplash.com/photo-1555244162-803834f70033?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=80"
     ]
@@ -838,6 +866,7 @@ export const vendors: Vendor[] = [
     "lat": 28.0645,
     "lng": -15.4623,
     "images": [
+      "https://guachinchestenerife.com/wp-content/uploads/2023/04/Restaurante-Jardin-Canario.jpg",
       "https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&auto=format&fit=crop&q=80"
     ]
@@ -849,7 +878,7 @@ export const vendors: Vendor[] = [
     "region": "Lanzarote",
     "phone": "+34 928 519 222",
     "email": "isladelobos@royalhideaway.com",
-    "website": "https://www.hotelvolcanlanzarote.com/restaurante-isla-de-lobos/",
+    "website": "https://princesayaiza.com/gastronomia/isla-de-lobos/",
     "capacity": 180,
     "styleTags": [
       "michelin-reco",
@@ -866,6 +895,7 @@ export const vendors: Vendor[] = [
     "lat": 28.8596,
     "lng": -13.8295,
     "images": [
+      "https://princesayaiza.com/wp-content/uploads/2025/04/2698-restaurante-isla-de-lobos-hotel-princesa-yaiza-7.jpg",
       "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&auto=format&fit=crop&q=80"
     ]
@@ -2249,6 +2279,7 @@ export const vendors: Vendor[] = [
     "lat": 43.2084,
     "lng": -2.0012,
     "images": [
+      "https://www.txertota.com/uploads/fotos/foto_157_c.jpg",
       "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=80"
     ]
@@ -3129,15 +3160,23 @@ export const vendorPrices: VendorPrice[] = [
 
 export const eventServices: EventService[] = [
   { id: "service-001", eventId: "event-001", category: "localizacion", vendorId: "vendor-003", estimatedCost: 6800, margin: 0, status: "contratado" },
-  { id: "service-002", eventId: "event-001", category: "restauracion", vendorId: "vendor-015", estimatedCost: 17820, margin: 0, status: "reservado" }
+  { id: "service-002", eventId: "event-001", category: "restauracion", vendorId: "vendor-015", estimatedCost: 17820, margin: 0, status: "reservado" },
+  { id: "service-003", eventId: "event-001", category: "decoracion", estimatedCost: 4200, margin: 0, status: "propuesto" },
+  { id: "service-004", eventId: "event-001", category: "fotografia", vendorId: "vendor-045", estimatedCost: 2400, margin: 0, status: "reservado" },
+  { id: "service-005", eventId: "event-001", category: "dj", estimatedCost: 1700, margin: 0, status: "pendiente" }
 ];
 
 export const tasks: Task[] = [
-  { id: "task-001", eventId: "event-001", title: "Cerrar menu infantil y alergias", owner: "Soraya", dueDate: "2026-07-10", status: "en-curso" }
+  { id: "task-001", eventId: "event-001", title: "Cerrar menu infantil y alergias", owner: "Soraya", dueDate: "2026-07-10", status: "en-curso" },
+  { id: "task-002", eventId: "event-001", title: "Validar plan B lluvia con la bodega", owner: "Aritz", dueDate: "2026-07-06", status: "bloqueada" }
 ];
 
 export const calendarItems: CalendarItem[] = [
-  { id: "cal-001", eventId: "event-001", title: "Visita tecnica espacio", kind: "visita-tecnica", startsAt: "2026-07-08T10:00:00", endsAt: "2026-07-08T12:00:00", owner: "Aritz" }
+  { id: "cal-001", eventId: "event-001", title: "Visita tecnica espacio", kind: "visita-tecnica", startsAt: "2026-07-08T10:00:00", endsAt: "2026-07-08T12:00:00", owner: "Aritz" },
+  { id: "cal-002", eventId: "event-001", title: "Llamada catering y dietas", kind: "reunion", startsAt: "2026-07-09T17:30:00", endsAt: "2026-07-09T18:15:00", owner: "Soraya" },
+  { id: "cal-003", eventId: "event-001", title: "Deadline decoracion floral", kind: "deadline", startsAt: "2026-07-12T09:00:00", endsAt: "2026-07-12T09:30:00", owner: "Nomad" },
+  { id: "cal-004", eventId: "event-001", title: "Segundo pago Nomad", kind: "pago", startsAt: "2026-08-29T09:00:00", endsAt: "2026-08-29T09:15:00", owner: "Nomad" },
+  { id: "cal-005", eventId: "event-001", title: "Boda I&R", kind: "dia-b", startsAt: "2026-09-05T09:00:00", endsAt: "2026-09-06T03:00:00", owner: "Nomad" }
 ];
 
 export const documents: DocumentRecord[] = [
@@ -3182,5 +3221,93 @@ export const reuniones: Reunion[] = [
     transcripcion: "Soraya: Bienvenidos, ¿qué tenéis en mente? Irene: Queremos algo en el norte, verde, con piedra y madera. Rubén: Que la comida y el vino sean excelentes. Nada de banquete aburrido.",
     acuerdos: ["Buscar 3 bodegas en Rioja Alavesa", "Enviar propuesta de catering alternativo", "Establecer presupuesto inicial"],
     createdAt: "2026-06-15"
+  }
+];
+
+export const checklistItems: ChecklistItemRecord[] = [
+  {
+    id: "check-001",
+    eventId: "event-001",
+    templateItemId: "tmpl-020",
+    titulo: "Preparar el guion de la ceremonia",
+    descripcion: "Definir lecturas, musica de entrada, votos y orden del cortejo.",
+    categoria: "3-2 meses",
+    completada: true,
+    fechaLimite: "2026-07-02",
+    responsable: "Soraya",
+    prioridad: "alta"
+  },
+  {
+    id: "check-002",
+    eventId: "event-001",
+    templateItemId: "tmpl-021",
+    titulo: "Organizar distribucion de mesas",
+    descripcion: "Crear primer seating con alergias, grupos familiares y mesas conflictivas.",
+    categoria: "3-2 meses",
+    completada: false,
+    fechaLimite: "2026-07-14",
+    responsable: "Irene",
+    prioridad: "alta"
+  },
+  {
+    id: "check-003",
+    eventId: "event-001",
+    templateItemId: "tmpl-023",
+    titulo: "Enviar plano de mesas al catering",
+    descripcion: "Enviar comensales por mesa y menus especiales al responsable del catering.",
+    categoria: "1 mes",
+    completada: false,
+    fechaLimite: "2026-08-01",
+    responsable: "Nomad",
+    prioridad: "alta"
+  },
+  {
+    id: "check-004",
+    eventId: "event-001",
+    templateItemId: "tmpl-025",
+    titulo: "Cerrar playlist y momentos del DJ",
+    descripcion: "Canciones de entrada, banquete, primer baile, apertura y cierre de fiesta.",
+    categoria: "1 mes",
+    completada: false,
+    fechaLimite: "2026-08-12",
+    responsable: "Ruben",
+    prioridad: "media"
+  },
+  {
+    id: "check-005",
+    eventId: "event-001",
+    templateItemId: "tmpl-030",
+    titulo: "Repasar cronograma con proveedores",
+    descripcion: "Enviar runbook final y confirmar horas de llegada, montaje y desmontaje.",
+    categoria: "Semana de la boda",
+    completada: false,
+    fechaLimite: "2026-09-01",
+    responsable: "Aritz",
+    prioridad: "alta"
+  },
+  {
+    id: "check-006",
+    eventId: "event-001",
+    templateItemId: "tmpl-034",
+    titulo: "Coordinar autobuses de invitados",
+    descripcion: "Validar rutas, responsables por parada y telefono de conductor.",
+    categoria: "Semana de la boda",
+    completada: false,
+    fechaLimite: "2026-09-05",
+    responsable: "Aritz",
+    prioridad: "alta"
+  }
+];
+
+export const emailRecords: EmailRecord[] = [
+  {
+    id: "email-001",
+    vendorId: "vendor-003",
+    eventId: "event-001",
+    templateId: "availability",
+    subject: "Disponibilidad y condiciones para Boda I&R",
+    body: "Solicitud enviada para confirmar disponibilidad, condiciones de reserva y tiempos de montaje.",
+    sentAt: "2026-06-28",
+    status: "enviado"
   }
 ];

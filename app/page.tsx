@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useApp } from "@/context/AppContext";
 import { Sidebar, type TabId } from "./components/Layout/Sidebar";
 import { Header } from "./components/Layout/Header";
+import type { Event, Vendor, VendorPrice } from "@/lib/types";
 import {
   Users,
   CalendarDays,
@@ -13,7 +14,9 @@ import {
   Palette,
   MapPin,
   Utensils,
-  Database
+  Database,
+  Bot,
+  Wand2
 } from "lucide-react";
 
 // Components
@@ -35,26 +38,21 @@ export default function Home() {
     calendarItems,
     checklistItems,
     clients,
+    initialized,
     resetToSeed
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
   const [activeEventId, setActiveEventId] = useState("");
+  const selectedEventId = activeEventId || events[0]?.id || "";
 
   // Determine active event
   const activeEvent = useMemo(() => {
-    if (activeEventId) {
-      return events.find((e) => e.id === activeEventId) || events[0];
+    if (selectedEventId) {
+      return events.find((e) => e.id === selectedEventId) || events[0];
     }
     return events[0];
-  }, [events, activeEventId]);
-
-  // Set default active event if none selected
-  React.useEffect(() => {
-    if (events.length > 0 && !activeEventId) {
-      setActiveEventId(events[0].id);
-    }
-  }, [events, activeEventId]);
+  }, [events, selectedEventId]);
 
   // Calculations for Dashboard
   const openTasks = checklistItems.filter((t) => !t.completada);
@@ -85,13 +83,28 @@ export default function Home() {
     return labels[tab];
   };
 
+  if (!initialized) {
+    return (
+      <main className="app-shell">
+        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <section className="workspace">
+          <div className="loading-panel">
+            <div className="panel-action"><Database size={18} /></div>
+            <h2>Preparando demo operativa</h2>
+            <p>Cargando datos locales, agenda, proveedores y checklist.</p>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="app-shell">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <section className="workspace">
         <Header
-          activeEventId={activeEventId}
+          activeEventId={selectedEventId}
           setActiveEventId={setActiveEventId}
           events={events}
           title={tabTitle(activeTab)}
@@ -171,6 +184,8 @@ export default function Home() {
                 )}
               </div>
             </section>
+
+            <AgentDemoPanel activeEventId={activeEvent?.id || ""} leadId={leads[0]?.id || ""} />
           </div>
         )}
 
@@ -178,10 +193,10 @@ export default function Home() {
 
         {activeTab === "events" && (
           <div style={{ display: "grid", gap: "24px" }}>
-            <BodasPage onSelectEvent={setActiveEventId} activeEventId={activeEventId} />
-            {activeEventId && (
+            <BodasPage onSelectEvent={setActiveEventId} activeEventId={selectedEventId} />
+            {selectedEventId && (
               <div style={{ borderTop: "2px solid var(--outline-variant)", paddingTop: "20px" }}>
-                <BodaDetail eventId={activeEventId} />
+                <BodaDetail eventId={selectedEventId} />
               </div>
             )}
           </div>
@@ -311,15 +326,121 @@ function Permission({ role, access }: { role: string; access: string }) {
   );
 }
 
+type AgentDemoResult = {
+  title: string;
+  endpoint: string;
+  data: unknown;
+};
+
+function AgentDemoPanel({ activeEventId, leadId }: { activeEventId: string; leadId: string }) {
+  const [loadingAction, setLoadingAction] = useState("");
+  const [result, setResult] = useState<AgentDemoResult | null>(null);
+
+  const postJson = (body: Record<string, string>) => ({
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+
+  const runAction = async (title: string, endpoint: string, init?: RequestInit) => {
+    setLoadingAction(title);
+    try {
+      const response = await fetch(endpoint, init);
+      const data = await response.json();
+      setResult({ title, endpoint, data });
+    } catch (error) {
+      setResult({
+        title,
+        endpoint,
+        data: {
+          error: error instanceof Error ? error.message : "No se pudo ejecutar la acción"
+        }
+      });
+    } finally {
+      setLoadingAction("");
+    }
+  };
+
+  return (
+    <section className="panel full agent-demo">
+      <div className="panel-header">
+        <div>
+          <p className="eyebrow">Demo operativa</p>
+          <h3>Ops Agent con aprobación humana</h3>
+        </div>
+        <div className="panel-action"><Bot size={18} /></div>
+      </div>
+
+      <div className="agent-demo-grid">
+        <div className="agent-demo-actions">
+          <button
+            className="secondary-button"
+            disabled={!activeEventId || Boolean(loadingAction)}
+            onClick={() => runAction("Briefing de boda", `/api/events/${activeEventId}/brief`)}
+          >
+            <Wand2 size={16} /> Briefing
+          </button>
+          <button
+            className="secondary-button"
+            disabled={!activeEventId || Boolean(loadingAction)}
+            onClick={() => runAction("Matching proveedores", "/api/agent/vendor-match", postJson({ eventId: activeEventId, category: "decoracion" }))}
+          >
+            <Wand2 size={16} /> Matching decoración
+          </button>
+          <button
+            className="secondary-button"
+            disabled={!activeEventId || Boolean(loadingAction)}
+            onClick={() => runAction("Borrador presupuesto", "/api/agent/budget-draft", postJson({ eventId: activeEventId }))}
+          >
+            <Wand2 size={16} /> Presupuesto
+          </button>
+          <button
+            className="secondary-button"
+            disabled={!activeEventId || Boolean(loadingAction)}
+            onClick={() => runAction("Runbook día B", "/api/agent/runbook", postJson({ eventId: activeEventId }))}
+          >
+            <Wand2 size={16} /> Runbook
+          </button>
+          <button
+            className="secondary-button"
+            disabled={!leadId || Boolean(loadingAction)}
+            onClick={() => runAction("Respuesta a lead", "/api/agent/draft-reply", postJson({ leadId }))}
+          >
+            <Wand2 size={16} /> Respuesta lead
+          </button>
+        </div>
+
+        <div className="agent-demo-output">
+          {loadingAction ? (
+            <div className="empty-state compact">Generando {loadingAction.toLowerCase()}...</div>
+          ) : result ? (
+            <>
+              <div className="agent-demo-output-header">
+                <strong>{result.title}</strong>
+                <span>{result.endpoint}</span>
+              </div>
+              <pre>{JSON.stringify(result.data, null, 2)}</pre>
+            </>
+          ) : (
+            <div className="empty-state compact">
+              Ejecuta una acción para ver el contrato real del endpoint.
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // Experience Configurator Subcomponent
 function ExperienceConfigurator({
   activeEvent,
   vendors,
   vendorPrices
 }: {
-  activeEvent: any;
-  vendors: any[];
-  vendorPrices: any[];
+  activeEvent: Event;
+  vendors: Vendor[];
+  vendorPrices: VendorPrice[];
 }) {
   const venues = vendors.filter((v) => v.category === "localizacion");
   const caterers = vendors.filter((v) => v.category === "restauracion");
@@ -374,8 +495,8 @@ function ExperienceCard({
   tone,
   icon
 }: {
-  vendor: any;
-  prices: any[];
+  vendor: Vendor;
+  prices: VendorPrice[];
   tone: "navy" | "apricot" | "white" | "slate";
   icon: React.ReactNode;
 }) {

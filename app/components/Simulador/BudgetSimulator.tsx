@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import {
   WalletCards,
   MapPin,
@@ -496,7 +497,14 @@ export function BudgetSimulator() {
                     const cost = simulatorOptionTotalFromValue(option, configuredValue, guestCount);
                     return (
                       <article key={option.id} className={selected ? "simulator-option selected" : "simulator-option"}>
-                        <img className="option-image" src={simulatorImages[option.id]} alt="" />
+                        <Image
+                          className="option-image"
+                          src={simulatorImages[option.id]}
+                          alt=""
+                          width={320}
+                          height={260}
+                          sizes="(max-width: 620px) 100vw, 320px"
+                        />
                         <div className="simulator-option-body">
                           <div className="simulator-option-top">
                             <label className="toggle-card">

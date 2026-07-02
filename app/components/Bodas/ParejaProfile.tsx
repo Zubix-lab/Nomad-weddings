@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import type { ParejaProfile } from "@/lib/types";
 import { User, Phone, Mail, Edit2, Check, X } from "lucide-react";
 
@@ -102,7 +102,7 @@ export function ParejaProfilePanel({ eventId, profiles, onSave }: ParejaProfileP
           >
             {isEditing ? (
               <div style={{ display: "grid", gap: "10px" }}>
-                <div style={{ display: "flex", justifyContent: "between", alignItems: "center", marginBottom: "4px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
                   <h4 style={{ margin: 0, fontSize: "14px", color: "var(--slate-grey)" }}>Editar Perfil</h4>
                   <div style={{ display: "flex", gap: "6px", marginLeft: "auto" }}>
                     <button
@@ -204,7 +204,7 @@ export function ParejaProfilePanel({ eventId, profiles, onSave }: ParejaProfileP
               </div>
             ) : (
               <div>
-                <div style={{ display: "flex", justifyContent: "between", alignItems: "start", marginBottom: "16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "16px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <div
                       style={{

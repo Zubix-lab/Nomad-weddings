@@ -11,6 +11,16 @@ npm run dev
 
 Abre `http://localhost:3000`.
 
+## Fotos reales de Google Places
+
+Para que las fichas de proveedores muestren fotos y resenas reales de Google Maps, crea `.env.local` con una key de Google Maps Platform que tenga Places API habilitada:
+
+```bash
+GOOGLE_PLACES_API_KEY=tu_api_key
+```
+
+Tambien se acepta `GOOGLE_MAPS_API_KEY`. Cada proveedor puede guardar un `Google Place ID` para apuntar a la ficha exacta; si esta vacio, la app intenta encontrarla por nombre, region y coordenadas. Sin key, la demo sigue funcionando con las imagenes locales del seed.
+
 ## Que incluye
 
 - Dashboard operativo con leads, bodas, servicios pendientes, coste estimado y agenda.
@@ -22,6 +32,8 @@ Abre `http://localhost:3000`.
   - `POST /api/leads`
   - `POST /api/emails/import`
   - `GET /api/events/:id/brief`
+  - `GET /api/google/places/vendor-media`
+  - `GET /api/google/places/photo`
   - `POST /api/agent/draft-reply`
   - `POST /api/agent/vendor-match`
   - `POST /api/agent/budget-draft`

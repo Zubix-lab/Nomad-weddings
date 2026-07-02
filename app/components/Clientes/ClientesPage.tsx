@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useApp } from "@/context/AppContext";
-import { Search, Plus, User, Phone, Mail, FileText, CheckCircle, ShieldAlert, Heart, Calendar } from "lucide-react";
+import { Search, Plus, User, Phone, Mail, CheckCircle, ShieldAlert, Heart, Calendar } from "lucide-react";
 import { Modal } from "../UI/Modal";
 import type { Client } from "@/lib/types";
 
@@ -104,7 +104,7 @@ export default function ClientesPage() {
   return (
     <div style={{ display: "grid", gap: "20px" }}>
       {/* Top search/actions bar */}
-      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "between", alignItems: "center", gap: "10px", background: "var(--pure-white)", padding: "16px", borderRadius: "8px", border: "1px solid var(--line)" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "10px", background: "var(--pure-white)", padding: "16px", borderRadius: "8px", border: "1px solid var(--line)" }}>
         <div style={{ display: "flex", flex: 1, minWidth: "260px", gap: "8px", position: "relative" }}>
           <input
             type="text"
@@ -181,7 +181,7 @@ export default function ClientesPage() {
                   </div>
                 )}
 
-                <div style={{ display: "flex", justifyContent: "between", alignItems: "center", borderTop: "1px dashed var(--line)", paddingTop: "8px", marginTop: "4px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px dashed var(--line)", paddingTop: "8px", marginTop: "4px" }}>
                   <span style={{ fontSize: "11px", display: "flex", alignItems: "center", gap: "4px", color: client.rgpdConsent ? "var(--primary)" : "var(--secondary)" }}>
                     <CheckCircle size={10} /> RGPD {client.rgpdConsent ? "Aceptado" : "Pendiente"}
                   </span>

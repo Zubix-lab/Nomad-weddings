@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import type { ChecklistItemRecord } from "@/lib/types";
 import { checklistTemplate } from "@/lib/checklistTemplate";
-import { Plus, Trash, Check, Undo, AlertCircle, Sparkles } from "lucide-react";
+import { Plus, Trash, Check, AlertCircle, Sparkles } from "lucide-react";
 import { Modal } from "../UI/Modal";
 
 interface ChecklistPanelProps {
@@ -111,7 +111,7 @@ export function ChecklistPanel({ eventId, checklistItems, onSave, onDelete }: Ch
         style={{
           display: "flex",
           flexWrap: "wrap",
-          justifyContent: "between",
+          justifyContent: "space-between",
           alignItems: "center",
           gap: "16px",
           background: "var(--surface-low)",
@@ -121,7 +121,7 @@ export function ChecklistPanel({ eventId, checklistItems, onSave, onDelete }: Ch
         }}
       >
         <div style={{ flex: 1, minWidth: "200px" }}>
-          <div style={{ display: "flex", justifyContent: "between", fontSize: "14px", fontWeight: "bold", color: "var(--primary)", marginBottom: "6px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", fontWeight: "bold", color: "var(--primary)", marginBottom: "6px" }}>
             <span>Progreso del Checklist</span>
             <span style={{ marginLeft: "auto" }}>{completionPercentage}% ({completedTasks.length} de {eventTasks.length})</span>
           </div>

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import type { Reunion } from "@/lib/types";
-import { Calendar, Plus, MessageSquare, ListTodo, Trash, Video, Phone, Users } from "lucide-react";
+import { Plus, MessageSquare, ListTodo, Video, Phone, Users } from "lucide-react";
 import { Modal } from "../UI/Modal";
 
 interface ReunionesPanelProps {
@@ -84,7 +84,7 @@ export function ReunionesPanel({ eventId, reuniones, onSave, onDelete }: Reunion
 
   return (
     <div style={{ display: "grid", gap: "16px" }}>
-      <div style={{ display: "flex", justifyContent: "between", alignItems: "center" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h4 style={{ margin: 0, fontSize: "16px", color: "var(--primary)", fontFamily: '"Source Serif 4", Georgia, serif' }}>
           Historial de Reuniones ({eventReuniones.length})
         </h4>
@@ -116,7 +116,7 @@ export function ReunionesPanel({ eventId, reuniones, onSave, onDelete }: Reunion
               }}
             >
               {/* Meeting Header */}
-              <div style={{ display: "flex", justifyContent: "between", alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <span
                     style={{

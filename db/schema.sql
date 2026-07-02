@@ -66,17 +66,38 @@ create table vendors (
   name text not null,
   category text not null,
   region text not null,
+  province text,
+  city text,
+  service_area text,
   phone text not null default '',
   email text not null default '',
   website text not null default '',
+  contact_url text,
+  source_url text,
+  instagram_url text,
+  google_maps_url text,
   capacity integer not null default 0,
   style_tags text[] not null default '{}',
+  languages text[] not null default '{}',
+  availability_type text not null default 'local' check (availability_type in ('local', 'se-desplaza', 'remoto')),
+  packages jsonb not null default '[]'::jsonb,
+  price_from numeric(12,2),
+  price_range text,
+  price_confidence text not null default 'baja' check (price_confidence in ('alta', 'media', 'baja')),
   reliability integer not null default 0 check (reliability between 0 and 10),
   response_time_hours integer not null default 0,
   previous_experience integer not null default 0,
   quality_score integer not null default 0 check (quality_score between 0 and 10),
   commission_free boolean not null default true,
   notes text not null default '',
+  reviews_summary text,
+  notes_internal text,
+  status text not null default 'draft' check (status in ('draft', 'reviewed', 'verified', 'outdated')),
+  last_checked_at date,
+  lat numeric(10,7),
+  lng numeric(10,7),
+  google_place_id text,
+  photos jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now()
 );
 
@@ -160,5 +181,8 @@ create table audit_log (
 create index idx_leads_status_priority on leads(status, priority);
 create index idx_events_date on events(date);
 create index idx_vendors_category_region on vendors(category, region);
+create index idx_vendors_status_checked on vendors(status, last_checked_at);
+create index idx_vendors_province_city on vendors(province, city);
+create index idx_vendors_price_confidence on vendors(price_confidence, price_from);
 create index idx_calendar_owner_time on calendar_items(owner_user_id, starts_at, ends_at);
 create index idx_tasks_event_status on tasks(event_id, status);

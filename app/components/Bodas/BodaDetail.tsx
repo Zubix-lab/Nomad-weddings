@@ -4,21 +4,17 @@ import React, { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import {
   CalendarDays,
-  Users,
   WalletCards,
   FileText,
   AlertTriangle,
   ClipboardList,
-  Mail,
   Plus,
-  Trash,
-  CheckCircle,
   MapPin
 } from "lucide-react";
 import { ParejaProfilePanel } from "./ParejaProfile";
 import { ReunionesPanel } from "./ReunionesPanel";
 import { ChecklistPanel } from "./ChecklistPanel";
-import type { Event, EventService, ServiceStatus } from "@/lib/types";
+import type { EventService, ServiceStatus } from "@/lib/types";
 
 interface BodaDetailProps {
   eventId: string;
@@ -32,18 +28,14 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
     clients,
     vendors,
     eventServices,
-    tasks,
     checklistItems,
     documents,
     parejaProfiles,
     reuniones,
     addParejaProfile,
-    updateParejaProfile,
     addReunion,
-    updateReunion,
     deleteReunion,
     addChecklistItem,
-    updateChecklistItem,
     deleteChecklistItem,
     addEventService,
     updateEventService,
@@ -187,7 +179,7 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
       {activeTab === "resumen" && (
         <div className="screen-grid">
           {/* Card stats */}
-          <div style={{ gridColumn: "span 2", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+          <div style={{ gridColumn: "span 2", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
             <div className="metric" style={{ background: "var(--pure-white)", border: "1px solid var(--line)" }}>
               <div className="metric-icon"><ClipboardList size={18} /></div>
               <p>Tareas Pendientes</p>
@@ -256,7 +248,7 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
                 </div>
               ) : (
                 eventDocs.map((doc) => (
-                  <div key={doc.id} style={{ display: "flex", justifyContent: "between", alignItems: "center", padding: "8px 10px", background: "var(--surface-low)", borderRadius: "6px", fontSize: "12px" }}>
+                  <div key={doc.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: "var(--surface-low)", borderRadius: "6px", fontSize: "12px" }}>
                     <div>
                       <strong>{doc.title}</strong>
                       <p style={{ margin: 0, fontSize: "10px", color: "var(--slate-grey)" }}>
@@ -300,7 +292,7 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
 
       {activeTab === "servicios" && (
         <div style={{ display: "grid", gap: "16px" }}>
-          <div style={{ display: "flex", justifyContent: "between", alignItems: "center" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h4 style={{ margin: 0, fontSize: "16px", color: "var(--primary)", fontFamily: '"Source Serif 4", Georgia, serif' }}>
               Servicios Requeridos y Presupuesto
             </h4>
@@ -333,9 +325,6 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
                 </thead>
                 <tbody>
                   {eventServicesList.map((service) => {
-                    const matchedVendor = service.vendorId
-                      ? vendors.find((v) => v.id === service.vendorId)
-                      : null;
                     const catVendors = vendors.filter((v) => v.category === service.category);
 
                     return (

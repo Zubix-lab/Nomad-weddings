@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useApp } from "@/context/AppContext";
-import { Plus, Calendar, Kanban, Search, MapPin, Users } from "lucide-react";
+import { Plus, Calendar, Kanban, Search, MapPin } from "lucide-react";
 import type { Event, EventPhase } from "@/lib/types";
 
 interface BodasPageProps {
@@ -19,7 +19,7 @@ const PHASES: Array<{ id: EventPhase; label: string; desc: string }> = [
 ];
 
 export default function BodasPage({ onSelectEvent, activeEventId }: BodasPageProps) {
-  const { events, clients, updateEvent, addEvent, addClient } = useApp();
+  const { events, updateEvent, addEvent, addClient } = useApp();
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -98,7 +98,7 @@ export default function BodasPage({ onSelectEvent, activeEventId }: BodasPagePro
   return (
     <div style={{ display: "grid", gap: "20px" }}>
       {/* Top controls bar */}
-      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "between", alignItems: "center", gap: "10px", background: "var(--pure-white)", padding: "16px", borderRadius: "8px", border: "1px solid var(--line)" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "10px", background: "var(--pure-white)", padding: "16px", borderRadius: "8px", border: "1px solid var(--line)" }}>
         <div style={{ display: "flex", flex: 1, minWidth: "260px", gap: "8px", position: "relative" }}>
           <input
             type="text"
@@ -191,7 +191,7 @@ export default function BodasPage({ onSelectEvent, activeEventId }: BodasPagePro
                         background: "var(--pure-white)",
                         padding: "12px",
                         borderRadius: "8px",
-                        border: "1px solid var(--line)",
+                        border: event.id === activeEventId ? "2px solid var(--primary)" : "1px solid var(--line)",
                         boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
                         cursor: "pointer",
                         display: "grid",
@@ -203,7 +203,7 @@ export default function BodasPage({ onSelectEvent, activeEventId }: BodasPagePro
                       <p style={{ margin: 0, fontSize: "11px", color: "var(--slate-grey)", display: "flex", alignItems: "center", gap: "4px" }}>
                         <MapPin size={10} /> {event.location}
                       </p>
-                      <div style={{ display: "flex", justifyContent: "between", fontSize: "11px", color: "var(--slate-grey)", marginTop: "4px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--slate-grey)", marginTop: "4px" }}>
                         <span>{new Date(event.date).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}</span>
                         <span style={{ marginLeft: "auto" }}>{event.guests} inv.</span>
                       </div>
