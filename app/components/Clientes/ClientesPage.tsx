@@ -5,8 +5,14 @@ import { useApp } from "@/context/AppContext";
 import { Search, Plus, User, Phone, Mail, CheckCircle, ShieldAlert, Heart, Calendar } from "lucide-react";
 import { Modal } from "../UI/Modal";
 import type { Client } from "@/lib/types";
+import { type TabId } from "../Layout/Sidebar";
 
-export default function ClientesPage() {
+interface ClientesPageProps {
+  onSelectEvent: (id: string) => void;
+  setActiveTab: (tab: TabId) => void;
+}
+
+export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPageProps) {
   const { clients, events, addClient, updateClient, deleteClient } = useApp();
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -274,6 +280,37 @@ export default function ClientesPage() {
                 </div>
               </div>
             )}
+
+            <div>
+              <h4 style={{ margin: "0 0 8px 0", fontSize: "14px", color: "var(--primary)" }}>Bodas y Eventos Asociados</h4>
+              <div style={{ display: "grid", gap: "8px" }}>
+                {events.filter((e) => e.clientId === activeClient.id).map((event) => (
+                  <div key={event.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "var(--surface-low)", borderRadius: "8px", border: "1px solid var(--outline-variant)" }}>
+                    <div>
+                      <strong style={{ fontSize: "14px", color: "var(--primary)" }}>{event.name}</strong>
+                      <span style={{ fontSize: "12px", color: "var(--slate-grey)", display: "block", marginTop: "2px" }}>
+                        📍 {event.location} · 📅 {event.date} · 👥 {event.guests} invitados
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="primary-button"
+                      onClick={() => {
+                        setIsDetailOpen(false);
+                        onSelectEvent(event.id);
+                        setActiveTab("events");
+                      }}
+                      style={{ fontSize: "12px", minHeight: "32px", padding: "6px 12px" }}
+                    >
+                      Gestionar Boda
+                    </button>
+                  </div>
+                ))}
+                {events.filter((e) => e.clientId === activeClient.id).length === 0 && (
+                  <p style={{ margin: 0, fontSize: "13px", color: "var(--slate-grey)" }}>No hay eventos asociados a esta cuenta.</p>
+                )}
+              </div>
+            </div>
 
             <div>
               <h4 style={{ margin: "0 0 6px 0", fontSize: "14px", color: "var(--primary)" }}>Notas Privadas del Wedding Planner</h4>

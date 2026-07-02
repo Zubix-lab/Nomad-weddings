@@ -4,19 +4,17 @@ import React, { useState, useMemo } from "react";
 import { useApp } from "@/context/AppContext";
 import { Sidebar, type TabId } from "./components/Layout/Sidebar";
 import { Header } from "./components/Layout/Header";
-import type { Event, Vendor, VendorPrice } from "@/lib/types";
+import type { Event, Vendor, VendorPrice, Task } from "@/lib/types";
 import {
   Users,
   CalendarDays,
   AlertTriangle,
   WalletCards,
-  ShieldCheck,
-  Palette,
-  MapPin,
-  Utensils,
   Database,
   Bot,
-  Wand2
+  Wand2,
+  ClipboardList,
+  Search
 } from "lucide-react";
 
 // Components
@@ -25,7 +23,6 @@ import ClientesPage from "./components/Clientes/ClientesPage";
 import BodasPage from "./components/Bodas/BodasPage";
 import BodaDetail from "./components/Bodas/BodaDetail";
 import { BudgetSimulator } from "./components/Simulador/BudgetSimulator";
-import EmailTemplatesPage from "./components/Emails/EmailTemplatesPage";
 
 export default function Home() {
   const {
@@ -39,10 +36,14 @@ export default function Home() {
     checklistItems,
     clients,
     initialized,
-    resetToSeed
+    resetToSeed,
+    addTask,
+    updateTask,
+    deleteTask
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
+  const [sidebarMinimized, setSidebarMinimized] = useState(false);
   const [activeEventId, setActiveEventId] = useState("");
   const selectedEventId = activeEventId || events[0]?.id || "";
 
@@ -71,22 +72,19 @@ export default function Home() {
 
   const tabTitle = (tab: TabId) => {
     const labels: Record<TabId, string> = {
-      dashboard: "Panel operativo",
-      leads: "CRM y Clientes",
+      dashboard: "Dashboard de Operaciones",
+      leads: "Clientes y CRM",
       events: "Fichas de Bodas",
       vendors: "Base de Proveedores",
-      experience: "Configurador de Experiencia",
-      simulator: "Simulador de Presupuesto",
-      emails: "Plantillas de Email",
-      governance: "RGPD y Gobernanza"
+      simulator: "Simulador de Presupuesto"
     };
     return labels[tab];
   };
 
   if (!initialized) {
     return (
-      <main className="app-shell">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <main className={sidebarMinimized ? "app-shell sidebar-minimized" : "app-shell"}>
+        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} minimized={sidebarMinimized} setMinimized={setSidebarMinimized} onResetSeed={resetToSeed} />
         <section className="workspace">
           <div className="loading-panel">
             <div className="panel-action"><Database size={18} /></div>
@@ -99,8 +97,8 @@ export default function Home() {
   }
 
   return (
-    <main className="app-shell">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+    <main className={sidebarMinimized ? "app-shell sidebar-minimized" : "app-shell"}>
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} minimized={sidebarMinimized} setMinimized={setSidebarMinimized} onResetSeed={resetToSeed} />
 
       <section className="workspace">
         <Header
@@ -112,84 +110,105 @@ export default function Home() {
 
         {activeTab === "dashboard" && (
           <div className="screen-grid">
+            {/* 1. Header Banner */}
+            <div style={{ gridColumn: "span 4", background: "var(--surface-low)", border: "1px solid var(--outline-variant)", borderRadius: "8px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h2 style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: "28px", color: "var(--primary)", margin: "0 0 6px 0" }}>Nomad Weddings Workspace</h2>
+                <p style={{ margin: 0, color: "var(--slate-grey)", fontSize: "14px" }}>Espacio de trabajo y Notion corporativo para la organización de bodas, clientes y proveedores.</p>
+              </div>
+            </div>
+
+            {/* 2. Metrics (KPIs) */}
             <Metric
-              label="Leads abiertos"
-              value={leads.filter((l) => !["won", "lost"].includes(l.status)).length}
-              detail="Pipeline comercial activo"
+              label="Clientes / CRM"
+              value={clients.length}
+              detail="Parejas registradas en CRM"
               icon={<Users size={18} />}
             />
             <Metric
               label="Bodas activas"
               value={events.length}
-              detail={`${openTasks.length} tareas pendientes`}
+              detail={`${checklistItems.filter((t) => !t.completada).length} tareas en bodas`}
               icon={<CalendarDays size={18} />}
             />
             <Metric
-              label="Servicios sin proveedor"
-              value={missingServices.length}
-              detail="Shortlist recomendada"
-              icon={<AlertTriangle size={18} />}
+              label="Proveedores verificados"
+              value={vendors.length}
+              detail={`${vendors.filter(v => v.region === "Guipúzcoa").length} Gipuzkoa · ${vendors.filter(v => v.region === "Gran Canaria" || v.region === "Tenerife" || v.region === "Lanzarote").length} Canarias`}
+              icon={<Search size={18} />}
             />
             <Metric
-              label="Gasto en proveedores"
+              label="Logística y presupuesto"
               value={currency(totalSpend)}
-              detail="Tarifas reales + estimaciones"
+              detail="Total estimado contratado"
               icon={<WalletCards size={18} />}
             />
 
-            <section className="panel wide">
-              <PanelHeader title="Agenda y Hitos de Bodas" action={<CalendarDays size={18} />} />
-              <div className="timeline-list">
-                {upcomingCalendar.map((item) => (
-                  <div key={item.id} className="timeline-row">
-                    <span className={`status-dot ${item.kind}`} />
-                    <div>
-                      <strong>{item.title}</strong>
-                      <p>
-                        {new Date(item.startsAt).toLocaleDateString("es-ES", {
-                          day: "2-digit",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit"
-                        })}{" "}
-                        · {item.owner}
-                      </p>
+            {/* 3. Notion-Style task board (Spans 3 columns) */}
+            <section className="panel" style={{ gridColumn: "span 3" }}>
+              <PanelHeader title="Gestor de Tareas Corporativo (Notion-style)" action={<ClipboardList size={18} />} />
+              <GlobalTaskManager tasks={tasks} addTask={addTask} updateTask={updateTask} deleteTask={deleteTask} />
+            </section>
+
+            {/* 4. Agenda & Alerts Sidebar (Spans 1 column) */}
+            <div style={{ display: "grid", gap: "16px", alignContent: "start" }}>
+              <section className="panel">
+                <PanelHeader title="Próximos Hitos" action={<CalendarDays size={18} />} />
+                <div className="timeline-list" style={{ marginTop: "12px" }}>
+                  {upcomingCalendar.map((item) => (
+                    <div key={item.id} className="timeline-row" style={{ padding: "8px 0" }}>
+                      <span className={`status-dot ${item.kind}`} />
+                      <div style={{ minWidth: 0 }}>
+                        <strong style={{ fontSize: "13px", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</strong>
+                        <p style={{ margin: "2px 0 0 0", fontSize: "11px", color: "var(--slate-grey)" }}>
+                          {new Date(item.startsAt).toLocaleDateString("es-ES", {
+                            day: "2-digit",
+                            month: "short"
+                          })}{" "}
+                          · {item.owner}
+                        </p>
+                      </div>
                     </div>
-                    <span className="pill">{item.kind}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
+                  ))}
+                  {upcomingCalendar.length === 0 && (
+                    <div className="empty-state compact">Sin hitos próximos.</div>
+                  )}
+                </div>
+              </section>
 
-            <section className="panel">
-              <PanelHeader title="Alertas de Coordinación" action={<AlertTriangle size={18} />} />
-              <div className="alert-list">
-                {missingServices.map((service) => {
-                  const ev = events.find((e) => e.id === service.eventId);
-                  return (
-                    <p key={service.id}>
-                      Falta proveedor para <strong>{service.category}</strong> en {ev?.name || "boda"}.
+              <section className="panel">
+                <PanelHeader title="Alertas de Coordinación" action={<AlertTriangle size={18} />} />
+                <div className="alert-list" style={{ marginTop: "12px", display: "grid", gap: "8px", fontSize: "12px" }}>
+                  {missingServices.slice(0, 3).map((service) => {
+                    const ev = events.find((e) => e.id === service.eventId);
+                    return (
+                      <p key={service.id} style={{ margin: 0, paddingLeft: "8px", borderLeft: "2px solid var(--secondary)", lineHeight: "1.4" }}>
+                        Falta proveedor para <strong>{service.category}</strong> en {ev?.name || "boda"}.
+                      </p>
+                    );
+                  })}
+                  {tasks.filter((t) => t.status === "bloqueada").slice(0, 2).map((task) => (
+                    <p key={task.id} style={{ margin: 0, paddingLeft: "8px", borderLeft: "2px solid var(--error)", lineHeight: "1.4" }}>
+                      Bloqueada: {task.title} (Boda {events.find((e) => e.id === task.eventId)?.name}).
                     </p>
-                  );
-                })}
-                {tasks.filter((t) => t.status === "bloqueada").map((task) => (
-                  <p key={task.id}>
-                    Bloqueada: {task.title} (Boda {events.find((e) => e.id === task.eventId)?.name}).
-                  </p>
-                ))}
-                {eventServices.length === 0 && (
-                  <p style={{ color: "var(--slate-grey)", background: "transparent", borderLeft: 0, paddingLeft: 0 }}>
-                    Sin alertas pendientes en este momento.
-                  </p>
-                )}
-              </div>
-            </section>
+                  ))}
+                  {missingServices.length === 0 && tasks.filter((t) => t.status === "bloqueada").length === 0 && (
+                    <p style={{ color: "var(--slate-grey)", margin: 0 }}>
+                      Sin alertas pendientes en este momento.
+                    </p>
+                  )}
+                </div>
+              </section>
+            </div>
 
-            <AgentDemoPanel activeEventId={activeEvent?.id || ""} leadId={leads[0]?.id || ""} />
+            {/* 5. Agent Demo Panel (Spans 4 columns) */}
+            <div style={{ gridColumn: "span 4" }}>
+              <AgentDemoPanel activeEventId={activeEvent?.id || ""} leadId={leads[0]?.id || ""} />
+            </div>
           </div>
         )}
 
-        {activeTab === "leads" && <ClientesPage />}
+        {activeTab === "leads" && <ClientesPage onSelectEvent={setActiveEventId} setActiveTab={setActiveTab} />}
 
         {activeTab === "events" && (
           <div style={{ display: "grid", gap: "24px" }}>
@@ -204,93 +223,7 @@ export default function Home() {
 
         {activeTab === "vendors" && <ProveedoresPage />}
 
-        {activeTab === "experience" && activeEvent && (
-          <ExperienceConfigurator
-            activeEvent={activeEvent}
-            vendors={vendors}
-            vendorPrices={vendorPrices}
-          />
-        )}
-
         {activeTab === "simulator" && <BudgetSimulator />}
-
-        {activeTab === "emails" && <EmailTemplatesPage />}
-
-        {activeTab === "governance" && (
-          <div className="screen-grid">
-            <section className="panel wide">
-              <PanelHeader title="Permisos de la Aplicación" action={<ShieldCheck size={18} />} />
-              <div className="permission-grid">
-                <Permission role="Admin / Socio" access="Acceso ilimitado a clientes, contabilidad, proveedores, emails y control del RGPD." />
-                <Permission role="Planner Colaborador" access="Acceso exclusivo a bodas asignadas, checklist, runbook y contacto con proveedores." />
-                <Permission role="Solo lectura (Parejas)" access="Acceso controlado a su checklist personal, documentos aprobados y presupuesto." />
-              </div>
-            </section>
-            
-            <section className="panel">
-              <PanelHeader title="Auditoría RGPD" action={<ShieldCheck size={18} />} />
-              <div className="compact-list" style={{ fontSize: "13px", lineHeight: "1.5" }}>
-                <p>✓ Registro de consentimiento de datos en leads comerciales.</p>
-                <p>✓ Opción de exportar y anonimizar datos personales de parejas.</p>
-                <p>✓ Registro interno de cambios de precios y presupuestos.</p>
-                <p>✓ Servidores locales y almacenamiento encriptado.</p>
-              </div>
-            </section>
-
-            <section className="panel">
-              <PanelHeader title="Base de Datos" action={<Database size={18} />} />
-              <div style={{ display: "grid", gap: "10px" }}>
-                <p style={{ margin: 0, fontSize: "13px", color: "var(--slate-grey)" }}>
-                  Restaura la base de datos a su estado original para cargar la semilla de 35+ proveedores y coordinaciones.
-                </p>
-                <button
-                  className="primary-button"
-                  style={{ background: "var(--secondary)" }}
-                  onClick={resetToSeed}
-                >
-                  Restaurar Datos Semilla
-                </button>
-              </div>
-            </section>
-
-            <section className="panel full">
-              <PanelHeader title="Clientes y Consentimiento RGPD" action={<Users size={18} />} />
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Pareja / Cliente</th>
-                      <th>Preferencias de Boda</th>
-                      <th>Estado de Consentimiento</th>
-                      <th>Notas de Privacidad</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {clients.map((client) => (
-                      <tr key={client.id}>
-                        <td style={{ fontWeight: "bold" }}>{client.coupleName}</td>
-                        <td>{client.preferences.join(", ") || "No definidas"}</td>
-                        <td>
-                          <span
-                            className="pill"
-                            style={{
-                              background: client.rgpdConsent ? "var(--primary-soft)" : "var(--error-soft)",
-                              color: client.rgpdConsent ? "var(--primary)" : "var(--error)",
-                              fontWeight: "bold"
-                            }}
-                          >
-                            {client.rgpdConsent ? "Aceptado y firmado" : "Pendiente de firma"}
-                          </span>
-                        </td>
-                        <td>{client.notes || "Ninguna nota registrada."}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </div>
-        )}
       </section>
     </main>
   );
@@ -432,100 +365,146 @@ function AgentDemoPanel({ activeEventId, leadId }: { activeEventId: string; lead
   );
 }
 
-// Experience Configurator Subcomponent
-function ExperienceConfigurator({
-  activeEvent,
-  vendors,
-  vendorPrices
-}: {
-  activeEvent: Event;
-  vendors: Vendor[];
-  vendorPrices: VendorPrice[];
-}) {
-  const venues = vendors.filter((v) => v.category === "localizacion");
-  const caterers = vendors.filter((v) => v.category === "restauracion");
-  const decors = vendors.filter((v) => v.category === "decoracion");
-
-  return (
-    <div className="experience-layout">
-      <section className="experience-main">
-        <div className="stepper" aria-label="Configurador de experiencia">
-          <span className="step active">1</span>
-          <span className="step-line active" />
-          <span className="step">2</span>
-          <span className="step-line" />
-          <span className="step">3</span>
-        </div>
-        <div className="editorial-header">
-          <p className="eyebrow">Configurador de Estilo</p>
-          <h3>Diseñar experiencia para {activeEvent.name}</h3>
-          <p>Combina localizaciones, restauración y floristas recomendados para construir una propuesta estética coherente.</p>
-        </div>
-
-        <div className="experience-grid">
-          {venues.slice(0, 2).map((vendor, index) => (
-            <ExperienceCard key={vendor.id} vendor={vendor} prices={vendorPrices} tone={index === 0 ? "navy" : "apricot"} icon={<MapPin size={18} />} />
-          ))}
-          {caterers.slice(0, 1).map((vendor) => (
-            <ExperienceCard key={vendor.id} vendor={vendor} prices={vendorPrices} tone="white" icon={<Utensils size={18} />} />
-          ))}
-          {decors.slice(0, 1).map((vendor) => (
-            <ExperienceCard key={vendor.id} vendor={vendor} prices={vendorPrices} tone="slate" icon={<Palette size={18} />} />
-          ))}
-        </div>
-      </section>
-
-      <aside className="experience-summary">
-        <p className="eyebrow">Propuesta de Concepto</p>
-        <h3>{activeEvent.location}</h3>
-        <div className="summary-stat"><span>Invitados</span><strong>{activeEvent.guests}</strong></div>
-        <div className="summary-stat"><span>Presupuesto</span><strong>{new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(activeEvent.totalBudget)}</strong></div>
-        <div className="summary-stat"><span>Estilo</span><strong>{activeEvent.style}</strong></div>
-        <button className="primary-button" onClick={() => window.print()}>
-          Imprimir Dossier Estilo
-        </button>
-      </aside>
-    </div>
-  );
+// Notion-style Global Task Manager Subcomponent
+interface GlobalTaskManagerProps {
+  tasks: Task[];
+  addTask: (t: Omit<Task, "id"> & { id?: string }) => string;
+  updateTask: (t: Task) => void;
+  deleteTask: (id: string) => void;
 }
 
-function ExperienceCard({
-  vendor,
-  prices,
-  tone,
-  icon
-}: {
-  vendor: Vendor;
-  prices: VendorPrice[];
-  tone: "navy" | "apricot" | "white" | "slate";
-  icon: React.ReactNode;
-}) {
-  const price = prices.find((item) => item.vendorId === vendor.id);
-  const currency = (val: number) => {
-    return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(val);
+function GlobalTaskManager({ tasks, addTask, updateTask, deleteTask }: GlobalTaskManagerProps) {
+  const [title, setTitle] = React.useState("");
+  const [owner, setOwner] = React.useState("Soraya");
+  const [dueDate, setDueDate] = React.useState("");
+
+  const globalTasks = React.useMemo(() => {
+    return tasks.filter((t) => t.eventId === "global" || t.eventId === "" || !t.eventId);
+  }, [tasks]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+    addTask({
+      title: title.trim(),
+      owner,
+      dueDate: dueDate || new Date().toISOString().split("T")[0],
+      status: "pendiente",
+      eventId: "global"
+    });
+    setTitle("");
+    setDueDate("");
+  };
+
+  const handleToggle = (task: Task) => {
+    updateTask({
+      ...task,
+      status: task.status === "hecha" ? "pendiente" : "hecha"
+    });
   };
 
   return (
-    <article className="experience-card">
-      <div className={`experience-visual ${tone}`}>
-        <div>{icon}</div>
-        <span>{vendor.region}</span>
+    <div style={{ display: "grid", gap: "16px", marginTop: "12px" }}>
+      {/* Task input form */}
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", background: "var(--surface-low)", padding: "12px", borderRadius: "8px", border: "1px solid var(--outline-variant)" }}>
+        <input
+          type="text"
+          placeholder="[+] Nueva tarea corporativa..."
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          style={{ flex: 1, minWidth: "200px", minHeight: "36px", padding: "6px 12px", fontSize: "13px" }}
+          aria-label="Nueva tarea"
+        />
+        <select
+          value={owner}
+          onChange={(e) => setOwner(e.target.value)}
+          style={{ width: "120px", minHeight: "36px", padding: "6px 10px", fontSize: "13px" }}
+          aria-label="Responsable"
+        >
+          <option value="Soraya">Soraya</option>
+          <option value="Aritz">Aritz</option>
+          <option value="Nomad">Nomad</option>
+        </select>
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          style={{ width: "130px", minHeight: "36px", padding: "6px 10px", fontSize: "13px" }}
+          aria-label="Fecha límite"
+        />
+        <button type="submit" className="primary-button" style={{ minHeight: "36px", padding: "6px 16px", fontSize: "13px" }}>
+          Añadir
+        </button>
+      </form>
+
+      {/* Tasks list */}
+      <div style={{ display: "grid", gap: "10px" }}>
+        {globalTasks.map((task) => (
+          <div
+            key={task.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "12px 16px",
+              background: "var(--pure-white)",
+              border: "1px solid var(--line)",
+              borderRadius: "8px",
+              opacity: task.status === "hecha" ? 0.6 : 1,
+              transition: "opacity 0.2s"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: 0 }}>
+              <input
+                type="checkbox"
+                checked={task.status === "hecha"}
+                onChange={() => handleToggle(task)}
+                style={{ width: "16px", height: "16px", flexShrink: 0, cursor: "pointer" }}
+                aria-label="Marcar como hecha"
+              />
+              <span
+                style={{
+                  fontSize: "14px",
+                  textDecoration: task.status === "hecha" ? "line-through" : "none",
+                  color: task.status === "hecha" ? "var(--slate-grey)" : "var(--ink)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap"
+                }}
+              >
+                {task.title}
+              </span>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginLeft: "12px", flexShrink: 0 }}>
+              <span className="pill" style={{ fontSize: "11px", background: "var(--surface-low)", color: "var(--primary)" }}>
+                {task.owner}
+              </span>
+              <span style={{ fontSize: "12px", color: "var(--slate-grey)" }}>
+                {task.dueDate}
+              </span>
+              <button
+                type="button"
+                onClick={() => deleteTask(task.id)}
+                style={{
+                  background: "transparent",
+                  border: 0,
+                  color: "var(--error)",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  padding: "4px"
+                }}
+                title="Eliminar"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        ))}
+        {globalTasks.length === 0 && (
+          <div className="empty-state">No hay tareas corporativas. ¡Añade una arriba para empezar!</div>
+        )}
       </div>
-      <div className="experience-copy">
-        <div>
-          <p className="eyebrow">{vendor.category.toUpperCase()}</p>
-          <h4 style={{ margin: "4px 0 2px 0" }}>{vendor.name}</h4>
-          <p style={{ margin: 0, fontSize: "12px", color: "var(--slate-grey)", height: "36px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-            {vendor.notes}
-          </p>
-        </div>
-        <div className="experience-meta" style={{ display: "flex", gap: "8px", borderTop: "1px dashed var(--line)", paddingTop: "8px", marginTop: "8px", fontSize: "11px" }}>
-          <span>Cap. {vendor.capacity}</span>
-          <span>
-            {price ? `${currency(price.minPrice)}-${currency(price.maxPrice)}` : "Consultar precio"}
-          </span>
-        </div>
-      </div>
-    </article>
+    </div>
   );
 }

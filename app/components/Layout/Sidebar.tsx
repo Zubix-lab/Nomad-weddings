@@ -6,21 +6,18 @@ import {
   Users,
   CalendarDays,
   Search,
-  Palette,
   WalletCards,
-  Mail,
-  ShieldCheck
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw
 } from "lucide-react";
 
 export const tabs = [
-  { id: "dashboard", label: "Panel", icon: ClipboardList },
-  { id: "leads", label: "Leads", icon: Users },
+  { id: "dashboard", label: "Dashboard", icon: ClipboardList },
+  { id: "leads", label: "Clientes / CRM", icon: Users },
   { id: "events", label: "Bodas", icon: CalendarDays },
   { id: "vendors", label: "Proveedores", icon: Search },
-  { id: "experience", label: "Experiencia", icon: Palette },
-  { id: "simulator", label: "Simulador", icon: WalletCards },
-  { id: "emails", label: "Emails", icon: Mail },
-  { id: "governance", label: "RGPD", icon: ShieldCheck }
+  { id: "simulator", label: "Simulador", icon: WalletCards }
 ] as const;
 
 export type TabId = typeof tabs[number]["id"];
@@ -28,19 +25,24 @@ export type TabId = typeof tabs[number]["id"];
 interface SidebarProps {
   activeTab: TabId;
   setActiveTab: (tab: TabId) => void;
+  minimized: boolean;
+  setMinimized: (minimized: boolean) => void;
+  onResetSeed?: () => void;
 }
 
-export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
+export function Sidebar({ activeTab, setActiveTab, minimized, setMinimized, onResetSeed }: SidebarProps) {
   return (
-    <aside className="sidebar">
+    <aside className={minimized ? "sidebar minimized" : "sidebar"}>
       <div className="brand-block">
         <div className="brand-mark">NW</div>
-        <div>
-          <p className="eyebrow" style={{ fontSize: "10px", margin: 0 }}>Nomad Weddings</p>
-          <h1 style={{ fontSize: "18px", margin: 0, whiteSpace: "nowrap" }}>Gestión Ops</h1>
-        </div>
+        {!minimized && (
+          <div>
+            <h1 style={{ fontSize: "18px", margin: 0, whiteSpace: "nowrap" }}>Nomad Weddings</h1>
+          </div>
+        )}
       </div>
-      <nav className="nav-list" aria-label="Secciones">
+
+      <nav className="nav-list" aria-label="Secciones" style={{ marginTop: "24px" }}>
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
@@ -51,17 +53,50 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
               title={tab.label}
             >
               <Icon size={18} />
-              <span>{tab.label}</span>
+              {!minimized && <span>{tab.label}</span>}
             </button>
           );
         })}
       </nav>
-      <div className="sidebar-foot" style={{ marginTop: "auto", padding: "12px", borderRadius: "8px" }}>
-        <p className="eyebrow" style={{ fontSize: "10px", margin: "0 0 4px 0" }}>Control de datos</p>
-        <strong style={{ fontSize: "12px" }}>Persistencia local</strong>
-        <span style={{ fontSize: "11px", display: "block", marginTop: "4px", lineHeight: "1.3" }}>
-          Todos los cambios se guardan automáticamente en tu navegador.
-        </span>
+
+      <div className="sidebar-foot" style={{ marginTop: "auto", display: "grid", gap: "10px" }}>
+        {onResetSeed && (
+          <button
+            className="secondary-button"
+            onClick={onResetSeed}
+            title="Restaurar base de datos"
+            style={{
+              padding: minimized ? "10px 0" : "8px 12px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "8px",
+              fontSize: "12px",
+              minHeight: "auto",
+              borderColor: "var(--outline-variant)",
+              width: "100%"
+            }}
+          >
+            <RefreshCw size={12} />
+            {!minimized && <span>Restaurar BD</span>}
+          </button>
+        )}
+        <button
+          className="secondary-button"
+          onClick={() => setMinimized(!minimized)}
+          title={minimized ? "Expandir" : "Contraer"}
+          style={{
+            padding: "8px 0",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            width: "100%",
+            minHeight: "auto",
+            borderColor: "var(--outline-variant)"
+          }}
+        >
+          {minimized ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        </button>
       </div>
     </aside>
   );

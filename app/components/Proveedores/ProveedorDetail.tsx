@@ -674,11 +674,8 @@ export function ProveedorDetail({
                 Condiciones Especiales
               </h4>
               <div style={{ padding: "12px", background: "var(--surface-low)", borderRadius: "8px", fontSize: "13px", lineHeight: "1.4" }}>
-                <p style={{ margin: "0 0 8px 0" }}>
-                  <strong>Comisión:</strong> {vendor.commissionFree ? "Libre de comisión (100% neto para pareja)" : "Sujeto a comisiones comerciales."}
-                </p>
                 <p style={{ margin: 0 }}>
-                  <strong>Experiencia en Nomad:</strong> {vendor.previousExperience} bodas organizadas con éxito.
+                  <strong>Comisión:</strong> {vendor.commissionFree ? "Libre de comisión (100% neto para pareja)" : "Sujeto a comisiones comerciales."}
                 </p>
               </div>
             </div>

@@ -345,8 +345,10 @@ export default function ProveedoresPage() {
                       <td>{getVendorProvince(vendor)}</td>
                       <td>{vendorStatusLabels[getVendorStatus(vendor)]}</td>
                       <td>{getVendorPriceRange(vendor, vendorPrices)}</td>
-                      <td style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                        <Star size={12} fill="var(--soft-apricot)" color="var(--soft-apricot)" /> {vendor.qualityScore}/10
+                      <td>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                          <Star size={12} fill="var(--soft-apricot)" color="var(--soft-apricot)" /> {vendor.qualityScore}/10
+                        </div>
                       </td>
                       <td>{getVendorSourceUrl(vendor) ? "Trazada" : "Pendiente"}</td>
                     </tr>

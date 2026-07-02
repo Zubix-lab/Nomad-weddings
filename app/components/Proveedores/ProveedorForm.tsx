@@ -351,14 +351,10 @@ export function ProveedorForm({ isOpen, onClose, onSave, vendor }: ProveedorForm
           </label>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+        <div>
           <label style={fieldStyle}>
             Packs
             <input value={packagesInput} onChange={(event) => setPackagesInput(event.target.value)} placeholder="basico, estandar, premium" />
-          </label>
-          <label style={fieldStyle}>
-            Experiencia previa Nomad
-            <input type="number" value={previousExperience} onChange={(event) => setPreviousExperience(Number(event.target.value))} min={0} />
           </label>
         </div>
 
