@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { Plus, Calendar, Kanban, Search, MapPin } from "lucide-react";
 import type { Event, EventPhase } from "@/lib/types";
+import { createWeddingProject } from "@/lib/wedding-project";
 
 interface BodasPageProps {
   onSelectEvent: (id: string) => void;
@@ -18,32 +19,6 @@ const PHASES: Array<{ id: EventPhase; label: string; desc: string }> = [
   { id: "produccion", label: "Producción", desc: "Coordinación y runbook" },
   { id: "semana-boda", label: "Semana Boda", desc: "Montaje final y día B" }
 ];
-
-const DEMO_TODAY = new Date("2026-07-03T00:00:00");
-
-function formatDate(date: Date): string {
-  return date.toISOString().split("T")[0];
-}
-
-function operationalDate(weddingDate: string, daysBeforeWedding: number, fallbackDaysFromToday: number): string {
-  const base = weddingDate ? new Date(`${weddingDate}T00:00:00`) : new Date(DEMO_TODAY);
-  base.setDate(base.getDate() + (weddingDate ? -daysBeforeWedding : fallbackDaysFromToday));
-  return formatDate(base);
-}
-
-function calendarRange(date: string, hour: string): { startsAt: string; endsAt: string } {
-  return {
-    startsAt: `${date}T${hour}:00`,
-    endsAt: `${date}T${hour}:45`,
-  };
-}
-
-function splitCommaList(value: string): string[] {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
 
 export default function BodasPage({ onSelectEvent, activeEventId, createRequestId = 0 }: BodasPageProps) {
   const {
@@ -93,235 +68,40 @@ export default function BodasPage({ onSelectEvent, activeEventId, createRequestI
 
   const handleCreateBoda = (e: React.FormEvent) => {
     e.preventDefault();
-    const coupleParts = coupleName.split("&").map((item) => item.trim()).filter(Boolean);
-    const firstName = partnerOneName.trim() || coupleParts[0] || "Persona 1";
-    const secondName = partnerTwoName.trim() || coupleParts[1] || "Persona 2";
-    const preferences = splitCommaList(weddingPriorities);
-    const partnerOneNotes = [partnerOnePreferences, dietaryNeeds ? `Alergias/dietas: ${dietaryNeeds}` : ""].filter(Boolean).join("\n");
-    const partnerTwoNotes = [partnerTwoPreferences, dietaryNeeds ? `Alergias/dietas: ${dietaryNeeds}` : ""].filter(Boolean).join("\n");
-    
-    // Create new client first
-    const clientId = "client-" + Date.now();
-    addClient({
-      id: clientId,
+    const project = createWeddingProject({
+      addClient,
+      addEvent,
+      addParejaProfile,
+      addEventService,
+      addWorkspacePage,
+      addWorkspaceBlock,
+      addCalendarItem
+    }, {
       coupleName,
-      contacts: [
-        { name: firstName, role: "pareja", phone: partnerOnePhone, email: partnerOneEmail },
-        { name: secondName, role: "pareja", phone: partnerTwoPhone, email: partnerTwoEmail }
-      ],
-      preferences,
-      notes: riskNotes || "Creado desde alta de boda",
-      rgpdConsent: true
-    });
-
-    // Create event
-    const eventId = "event-" + Date.now();
-    addEvent({
-      id: eventId,
-      clientId,
-      name: eventName || `Boda de ${coupleName}`,
+      eventName,
       date,
       location,
       region,
-      guests: Number(guests),
+      guests,
+      budget,
       style,
-      totalBudget: Number(budget),
-      phase: "descubrimiento",
-      risks: splitCommaList(riskNotes),
-      dietaryNeeds: splitCommaList(dietaryNeeds),
-      accommodationNeeds: "",
-      paymentStatus: "Pendiente primer pago"
-    });
-
-    addParejaProfile({
-      eventId,
-      nombre: firstName,
-      rol: "novia",
-      gustos: partnerOnePreferences,
-      alergias: dietaryNeeds,
-      contacto: {
-        telefono: partnerOnePhone,
-        email: partnerOneEmail
+      preferences: weddingPriorities,
+      dietaryNeeds,
+      riskNotes,
+      contactOne: {
+        name: partnerOneName,
+        role: "novia",
+        phone: partnerOnePhone,
+        email: partnerOneEmail,
+        preferences: partnerOnePreferences
       },
-      notas: partnerOneNotes
-    });
-
-    addParejaProfile({
-      eventId,
-      nombre: secondName,
-      rol: "novio",
-      gustos: partnerTwoPreferences,
-      alergias: dietaryNeeds,
-      contacto: {
-        telefono: partnerTwoPhone,
-        email: partnerTwoEmail
-      },
-      notas: partnerTwoNotes
-    });
-
-    const estimatedBudget = Number(budget);
-    [
-      { category: "espacio", ratio: 0.28 },
-      { category: "catering", ratio: 0.34 },
-      { category: "fotografia", ratio: 0.08 },
-      { category: "musica", ratio: 0.07 },
-      { category: "decoracion", ratio: 0.09 }
-    ].forEach((service) => {
-      addEventService({
-        eventId,
-        category: service.category,
-        estimatedCost: Math.max(800, Math.round(estimatedBudget * service.ratio)),
-        margin: 0,
-        status: "pendiente"
-      });
-    });
-
-    const kickoffPageId = addWorkspacePage({
-      eventId,
-      title: "Kickoff operativo",
-      icon: "CalendarDays",
-      description: "Briefing, alcance, decisiones iniciales y proximos pasos de la pareja.",
-      order: 1
-    });
-    const vendorPageId = addWorkspacePage({
-      eventId,
-      title: "Proveedores clave",
-      icon: "Users",
-      description: "Shortlist, reservas, contratos y responsables por categoria.",
-      order: 2
-    });
-    const financePageId = addWorkspacePage({
-      eventId,
-      title: "Finanzas y pagos",
-      icon: "WalletCards",
-      description: "Pagos programados, avisos financieros y compromisos por proveedor.",
-      order: 3
-    });
-    const productionPageId = addWorkspacePage({
-      eventId,
-      title: "Produccion final",
-      icon: "ClipboardList",
-      description: "Invitados, seating, runbook, plan B y semana de la boda.",
-      order: 4
-    });
-
-    addWorkspaceBlock({
-      pageId: kickoffPageId,
-      eventId,
-      type: "milestone",
-      title: "Briefing de pareja validado",
-      body: `Confirmar estilo, presupuesto, prioridades y limites operativos para ${eventName || coupleName}.`,
-      owner: "Nomad",
-      dueDate: operationalDate(date, 240, 7),
-      reminderDate: operationalDate(date, 247, 3),
-      priority: "alta",
-      status: "pendiente",
-      createdAt: new Date().toISOString()
-    });
-    addWorkspaceBlock({
-      pageId: vendorPageId,
-      eventId,
-      type: "vendor",
-      title: "Shortlist de espacio y catering",
-      body: "Preparar 3 opciones por categoria, validar disponibilidad y condiciones de reserva.",
-      owner: "Nomad",
-      dueDate: operationalDate(date, 210, 14),
-      reminderDate: operationalDate(date, 217, 10),
-      priority: "alta",
-      status: "pendiente",
-      createdAt: new Date().toISOString()
-    });
-    addWorkspaceBlock({
-      pageId: vendorPageId,
-      eventId,
-      type: "vendor",
-      title: "Fotografia, musica y decoracion",
-      body: "Solicitar propuestas, revisar estilo y bloquear proveedores prioritarios.",
-      owner: "Nomad",
-      dueDate: operationalDate(date, 150, 21),
-      reminderDate: operationalDate(date, 157, 17),
-      priority: "media",
-      status: "pendiente",
-      createdAt: new Date().toISOString()
-    });
-    addWorkspaceBlock({
-      pageId: financePageId,
-      eventId,
-      type: "payment",
-      title: "Reserva inicial Nomad",
-      body: "Primer pago para activar planificacion, proveedores y agenda operativa.",
-      owner: "Pareja",
-      dueDate: operationalDate(date, 230, 10),
-      reminderDate: operationalDate(date, 237, 6),
-      priority: "alta",
-      status: "programado",
-      amount: Math.max(1200, Math.round(estimatedBudget * 0.12)),
-      createdAt: new Date().toISOString()
-    });
-    addWorkspaceBlock({
-      pageId: financePageId,
-      eventId,
-      type: "payment",
-      title: "Segundo pago de proveedores",
-      body: "Bloquear pagos de espacio, catering y proveedores confirmados.",
-      owner: "Nomad",
-      dueDate: operationalDate(date, 45, 30),
-      reminderDate: operationalDate(date, 52, 23),
-      priority: "alta",
-      status: "programado",
-      amount: Math.max(3000, Math.round(estimatedBudget * 0.35)),
-      createdAt: new Date().toISOString()
-    });
-    addWorkspaceBlock({
-      pageId: productionPageId,
-      eventId,
-      type: "task",
-      title: "Primer seating y necesidades especiales",
-      body: "Recoger alergias, movilidad, transporte y prioridades familiares antes de cerrar plano.",
-      owner: "Pareja",
-      dueDate: operationalDate(date, 60, 35),
-      reminderDate: operationalDate(date, 67, 28),
-      priority: "media",
-      status: "pendiente",
-      createdAt: new Date().toISOString()
-    });
-    addWorkspaceBlock({
-      pageId: productionPageId,
-      eventId,
-      type: "milestone",
-      title: "Runbook de dia B aprobado",
-      body: "Cerrar cronograma, responsables, telefonos, plan B y checklist de montaje.",
-      owner: "Nomad",
-      dueDate: operationalDate(date, 14, 45),
-      reminderDate: operationalDate(date, 21, 38),
-      priority: "alta",
-      status: "pendiente",
-      createdAt: new Date().toISOString()
-    });
-
-    const kickoffDate = operationalDate(date, 238, 5);
-    const visitDate = operationalDate(date, 120, 20);
-    const finalMeetingDate = operationalDate(date, 21, 40);
-    addCalendarItem({
-      eventId,
-      title: "Kickoff con pareja",
-      kind: "reunion",
-      ...calendarRange(kickoffDate, "10:00"),
-      owner: "Nomad"
-    });
-    addCalendarItem({
-      eventId,
-      title: "Visita tecnica espacio",
-      kind: "visita-tecnica",
-      ...calendarRange(visitDate, "11:00"),
-      owner: "Nomad"
-    });
-    addCalendarItem({
-      eventId,
-      title: "Reunion final de produccion",
-      kind: "deadline",
-      ...calendarRange(finalMeetingDate, "17:00"),
-      owner: "Nomad"
+      contactTwo: {
+        name: partnerTwoName,
+        role: "novio",
+        phone: partnerTwoPhone,
+        email: partnerTwoEmail,
+        preferences: partnerTwoPreferences
+      }
     });
 
     setCoupleName("");
@@ -344,7 +124,7 @@ export default function BodasPage({ onSelectEvent, activeEventId, createRequestI
     setDietaryNeeds("");
     setRiskNotes("");
     setIsFormOpen(false);
-    onSelectEvent(eventId); // select newly created wedding
+    onSelectEvent(project.eventId); // select newly created wedding
   };
 
   const handleMovePhase = (event: Event, direction: "next" | "prev") => {

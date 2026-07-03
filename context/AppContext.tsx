@@ -5,7 +5,7 @@ import type {
   Lead, Client, Event, Vendor, VendorPrice, EventService,
   Task, CalendarItem, DocumentRecord, Communication,
   ParejaProfile, Reunion, ChecklistItemRecord, EmailRecord,
-  WorkspacePage, WorkspaceBlock, NotificationRecord
+  WorkspacePage, WorkspaceBlock, NotificationRecord, CompanyFinanceRecord
 } from "@/lib/types";
 import {
   leads as seedLeads,
@@ -24,7 +24,8 @@ import {
   emailRecords as seedEmailRecords,
   workspacePages as seedWorkspacePages,
   workspaceBlocks as seedWorkspaceBlocks,
-  notificationRecords as seedNotificationRecords
+  notificationRecords as seedNotificationRecords,
+  companyFinanceRecords as seedCompanyFinanceRecords
 } from "@/lib/seed";
 
 // --------------- helpers ---------------
@@ -100,6 +101,7 @@ interface AppState {
   workspacePages: WorkspacePage[];
   workspaceBlocks: WorkspaceBlock[];
   notificationRecords: NotificationRecord[];
+  companyFinanceRecords: CompanyFinanceRecord[];
   initialized: boolean;
 }
 
@@ -145,6 +147,7 @@ const STORAGE_KEYS: Record<CollectionKey, string> = {
   workspacePages: STORAGE_PREFIX + "workspacePages",
   workspaceBlocks: STORAGE_PREFIX + "workspaceBlocks",
   notificationRecords: STORAGE_PREFIX + "notificationRecords",
+  companyFinanceRecords: STORAGE_PREFIX + "companyFinanceRecords",
 };
 
 const COLLECTION_KEYS = Object.keys(STORAGE_KEYS) as CollectionKey[];
@@ -165,6 +168,10 @@ function parseBackupPayload(payload: unknown): Omit<AppState, "initialized"> {
   COLLECTION_KEYS.forEach((collection) => {
     const value = collections[collection];
     if (!Array.isArray(value)) {
+      if (collection === "companyFinanceRecords") {
+        nextState[collection] = seedCompanyFinanceRecords as never;
+        return;
+      }
       throw new Error(`El backup no incluye la coleccion ${collection}.`);
     }
     nextState[collection] = value as never;
@@ -269,6 +276,10 @@ interface AppContextValue extends AppState {
   addNotificationRecord: (n: Omit<NotificationRecord, "id"> & { id?: string }) => string;
   updateNotificationRecord: (n: NotificationRecord) => void;
   deleteNotificationRecord: (id: string) => void;
+  // Company finance
+  addCompanyFinanceRecord: (r: Omit<CompanyFinanceRecord, "id"> & { id?: string }) => string;
+  updateCompanyFinanceRecord: (r: CompanyFinanceRecord) => void;
+  deleteCompanyFinanceRecord: (id: string) => void;
   // Utility
   generateId: () => string;
   resetToSeed: () => void;
@@ -296,6 +307,7 @@ const EMPTY_STATE: AppState = {
   workspacePages: [],
   workspaceBlocks: [],
   notificationRecords: [],
+  companyFinanceRecords: [],
   initialized: false,
 };
 
@@ -324,6 +336,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         workspacePages: mergeSeedRecords(STORAGE_KEYS.workspacePages, load<WorkspacePage>(STORAGE_KEYS.workspacePages, seedWorkspacePages), seedWorkspacePages),
         workspaceBlocks: mergeSeedRecords(STORAGE_KEYS.workspaceBlocks, load<WorkspaceBlock>(STORAGE_KEYS.workspaceBlocks, seedWorkspaceBlocks), seedWorkspaceBlocks),
         notificationRecords: load<NotificationRecord>(STORAGE_KEYS.notificationRecords, seedNotificationRecords),
+        companyFinanceRecords: mergeSeedRecords(STORAGE_KEYS.companyFinanceRecords, load<CompanyFinanceRecord>(STORAGE_KEYS.companyFinanceRecords, seedCompanyFinanceRecords), seedCompanyFinanceRecords),
       },
     });
   }, []);
@@ -413,6 +426,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addNotificationRecord: (n) => add("notificationRecords", n),
     updateNotificationRecord: (n) => update("notificationRecords", n as unknown as Record<string, unknown>),
     deleteNotificationRecord: (id) => remove("notificationRecords", id),
+    // Company finance
+    addCompanyFinanceRecord: (r) => add("companyFinanceRecords", r),
+    updateCompanyFinanceRecord: (r) => update("companyFinanceRecords", r as unknown as Record<string, unknown>),
+    deleteCompanyFinanceRecord: (id) => remove("companyFinanceRecords", id),
     // Utility
     generateId,
     exportBackup: () => {

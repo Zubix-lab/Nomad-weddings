@@ -2,10 +2,11 @@
 
 import React, { useState } from "react";
 import { useApp } from "@/context/AppContext";
-import { Search, Plus, User, Phone, Mail, CheckCircle, ShieldAlert, Heart, Calendar } from "lucide-react";
+import { ArrowRight, Search, Plus, User, Phone, Mail, CheckCircle, ShieldAlert, Heart, Calendar, FileText } from "lucide-react";
 import { Modal } from "../UI/Modal";
 import type { Client } from "@/lib/types";
 import { type TabId } from "../Layout/Sidebar";
+import { createWeddingProject } from "@/lib/wedding-project";
 
 interface ClientesPageProps {
   onSelectEvent: (id: string) => void;
@@ -13,11 +14,25 @@ interface ClientesPageProps {
 }
 
 export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPageProps) {
-  const { clients, events, addClient, updateClient, deleteClient } = useApp();
+  const {
+    clients,
+    events,
+    addClient,
+    updateClient,
+    deleteClient,
+    addEvent,
+    addParejaProfile,
+    addEventService,
+    addWorkspacePage,
+    addWorkspaceBlock,
+    addCalendarItem
+  } = useApp();
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [activeClient, setActiveClient] = useState<Client | undefined>(undefined);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [weddingClient, setWeddingClient] = useState<Client | undefined>(undefined);
+  const [isWeddingFormOpen, setIsWeddingFormOpen] = useState(false);
 
   // Form states
   const [coupleName, setCoupleName] = useState("");
@@ -32,6 +47,18 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
   const [preferencesInput, setPreferencesInput] = useState("");
   const [notes, setNotes] = useState("");
   const [rgpdConsent, setRgpdConsent] = useState(true);
+
+  // Wedding project states
+  const [weddingEventName, setWeddingEventName] = useState("");
+  const [weddingDate, setWeddingDate] = useState("");
+  const [weddingLocation, setWeddingLocation] = useState("");
+  const [weddingRegion, setWeddingRegion] = useState("Pais Vasco");
+  const [weddingGuests, setWeddingGuests] = useState(100);
+  const [weddingBudget, setWeddingBudget] = useState(30000);
+  const [weddingStyle, setWeddingStyle] = useState("");
+  const [weddingPriorities, setWeddingPriorities] = useState("");
+  const [weddingDietaryNeeds, setWeddingDietaryNeeds] = useState("");
+  const [weddingRiskNotes, setWeddingRiskNotes] = useState("");
 
   const filteredClients = clients.filter((c) =>
     c.coupleName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -74,6 +101,22 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
     setIsFormOpen(true);
   };
 
+  const openWeddingModal = (client: Client) => {
+    setWeddingClient(client);
+    setWeddingEventName(`Boda de ${client.coupleName}`);
+    setWeddingDate("");
+    setWeddingLocation("");
+    setWeddingRegion("Pais Vasco");
+    setWeddingGuests(100);
+    setWeddingBudget(30000);
+    setWeddingStyle(client.preferences.join(", "));
+    setWeddingPriorities(client.preferences.join(", "));
+    setWeddingDietaryNeeds("");
+    setWeddingRiskNotes(client.notes);
+    setIsDetailOpen(false);
+    setIsWeddingFormOpen(true);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const contacts = [
@@ -105,6 +148,57 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
       });
     }
     setIsFormOpen(false);
+  };
+
+  const handleCreateWeddingFromClient = (submitEvent: React.FormEvent<HTMLFormElement>) => {
+    submitEvent.preventDefault();
+    if (!weddingClient) return;
+
+    const contactOne = weddingClient.contacts[0] || { name: "Persona 1", role: "novia", phone: "", email: "" };
+    const contactTwo = weddingClient.contacts[1] || { name: "Persona 2", role: "novio", phone: "", email: "" };
+    const project = createWeddingProject({
+      addClient,
+      addEvent,
+      addParejaProfile,
+      addEventService,
+      addWorkspacePage,
+      addWorkspaceBlock,
+      addCalendarItem
+    }, {
+      clientId: weddingClient.id,
+      coupleName: weddingClient.coupleName,
+      eventName: weddingEventName,
+      date: weddingDate,
+      location: weddingLocation,
+      region: weddingRegion,
+      guests: weddingGuests,
+      budget: weddingBudget,
+      style: weddingStyle,
+      preferences: weddingPriorities || weddingClient.preferences.join(", "),
+      dietaryNeeds: weddingDietaryNeeds,
+      riskNotes: weddingRiskNotes,
+      clientNotes: weddingClient.notes,
+      rgpdConsent: weddingClient.rgpdConsent,
+      contactOne: {
+        name: contactOne.name,
+        role: contactOne.role,
+        phone: contactOne.phone,
+        email: contactOne.email,
+        preferences: weddingClient.preferences.join(", ")
+      },
+      contactTwo: {
+        name: contactTwo.name,
+        role: contactTwo.role,
+        phone: contactTwo.phone,
+        email: contactTwo.email,
+        preferences: weddingClient.preferences.join(", ")
+      }
+    });
+
+    setIsWeddingFormOpen(false);
+    setIsDetailOpen(false);
+    onSelectEvent(project.eventId);
+    setActiveTab("events");
   };
 
   return (
@@ -198,10 +292,34 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
                       e.stopPropagation();
                       openEditModal(client);
                     }}
-                    style={{ fontSize: "11px", minHeight: "28px", padding: "4px 8px", marginLeft: "auto" }}
+                    style={{ width: "auto", fontSize: "11px", minHeight: "28px", padding: "4px 8px", marginLeft: "auto" }}
                   >
                     Editar
                   </button>
+                  {clientEvents.length > 0 ? (
+                    <button
+                      className="mini-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectEvent(clientEvents[0].id);
+                        setActiveTab("events");
+                      }}
+                      style={{ width: "auto", fontSize: "11px", minHeight: "28px", padding: "4px 8px" }}
+                    >
+                      Gestionar
+                    </button>
+                  ) : (
+                    <button
+                      className="mini-button active"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openWeddingModal(client);
+                      }}
+                      style={{ width: "auto", fontSize: "11px", minHeight: "28px", padding: "4px 8px" }}
+                    >
+                      Crear boda
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -292,22 +410,46 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
                         📍 {event.location} · 📅 {event.date} · 👥 {event.guests} invitados
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      className="primary-button"
-                      onClick={() => {
-                        setIsDetailOpen(false);
-                        onSelectEvent(event.id);
-                        setActiveTab("events");
-                      }}
-                      style={{ fontSize: "12px", minHeight: "32px", padding: "6px 12px" }}
-                    >
-                      Gestionar Boda
-                    </button>
+                    <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => {
+                          setIsDetailOpen(false);
+                          onSelectEvent(event.id);
+                          setActiveTab("notion");
+                        }}
+                        style={{ fontSize: "12px", minHeight: "32px", padding: "6px 12px" }}
+                      >
+                        <FileText size={14} /> Notion
+                      </button>
+                      <button
+                        type="button"
+                        className="primary-button"
+                        onClick={() => {
+                          setIsDetailOpen(false);
+                          onSelectEvent(event.id);
+                          setActiveTab("events");
+                        }}
+                        style={{ fontSize: "12px", minHeight: "32px", padding: "6px 12px" }}
+                      >
+                        Gestionar Boda
+                      </button>
+                    </div>
                   </div>
                 ))}
                 {events.filter((e) => e.clientId === activeClient.id).length === 0 && (
-                  <p style={{ margin: 0, fontSize: "13px", color: "var(--slate-grey)" }}>No hay eventos asociados a esta cuenta.</p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "12px", background: "var(--surface-low)", borderRadius: "8px", border: "1px dashed var(--outline-variant)" }}>
+                    <p style={{ margin: 0, fontSize: "13px", color: "var(--slate-grey)" }}>No hay eventos asociados. Convierte esta cuenta en una boda para generar ficha, Notion, pagos y agenda.</p>
+                    <button
+                      type="button"
+                      className="primary-button"
+                      onClick={() => openWeddingModal(activeClient)}
+                      style={{ whiteSpace: "nowrap", fontSize: "12px", minHeight: "32px", padding: "6px 12px" }}
+                    >
+                      Crear boda <ArrowRight size={14} />
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -330,6 +472,79 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Wedding project modal */}
+      <Modal isOpen={isWeddingFormOpen} onClose={() => setIsWeddingFormOpen(false)} title={`Crear boda desde CRM${weddingClient ? `: ${weddingClient.coupleName}` : ""}`}>
+        <form onSubmit={handleCreateWeddingFromClient} style={{ display: "grid", gap: "12px" }}>
+          <div style={{ padding: "12px", background: "var(--surface-low)", borderRadius: "8px", border: "1px solid var(--outline-variant)", display: "grid", gap: "6px" }}>
+            <strong style={{ color: "var(--primary)", fontSize: "14px" }}>{weddingClient?.coupleName || "Cuenta cliente"}</strong>
+            <p style={{ margin: 0, color: "var(--slate-grey)", fontSize: "13px", lineHeight: 1.45 }}>
+              Este paso crea la boda, su ficha operativa, perfiles de pareja, roadmap Notion, pagos iniciales y agenda base.
+            </p>
+          </div>
+
+          <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
+            Nombre del proyecto boda *
+            <input required placeholder="Ej. Boda A&B" value={weddingEventName} onChange={(eventInput) => setWeddingEventName(eventInput.target.value)} />
+          </label>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+            <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
+              Fecha de la boda *
+              <input required type="date" value={weddingDate} onChange={(eventInput) => setWeddingDate(eventInput.target.value)} />
+            </label>
+            <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
+              Zona de operacion
+              <select value={weddingRegion} onChange={(eventInput) => setWeddingRegion(eventInput.target.value)}>
+                <option value="Pais Vasco">Pais Vasco / Gipuzkoa</option>
+                <option value="Canarias">Canarias / Gran Canaria</option>
+              </select>
+            </label>
+          </div>
+
+          <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
+            Lugar o finca
+            <input placeholder="Ej. Bodega, finca, restaurante..." value={weddingLocation} onChange={(eventInput) => setWeddingLocation(eventInput.target.value)} />
+          </label>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+            <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
+              Invitados estimados
+              <input type="number" min={10} value={weddingGuests} onChange={(eventInput) => setWeddingGuests(Number(eventInput.target.value))} />
+            </label>
+            <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
+              Presupuesto estimado
+              <input type="number" min={1000} value={weddingBudget} onChange={(eventInput) => setWeddingBudget(Number(eventInput.target.value))} />
+            </label>
+          </div>
+
+          <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
+            Estilo y concepto
+            <input placeholder="Ej. ceremonia exterior, fiesta larga, cocina local..." value={weddingStyle} onChange={(eventInput) => setWeddingStyle(eventInput.target.value)} />
+          </label>
+
+          <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
+            Preferencias clave
+            <input placeholder="Ej. musica en directo, flores silvestres, menu vegetariano..." value={weddingPriorities} onChange={(eventInput) => setWeddingPriorities(eventInput.target.value)} />
+          </label>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+            <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
+              Dietas / alergias
+              <input placeholder="Ej. celiacos, veganos, frutos secos" value={weddingDietaryNeeds} onChange={(eventInput) => setWeddingDietaryNeeds(eventInput.target.value)} />
+            </label>
+            <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
+              Riesgos o notas iniciales
+              <input placeholder="Ej. lluvia, transporte, familia sensible" value={weddingRiskNotes} onChange={(eventInput) => setWeddingRiskNotes(eventInput.target.value)} />
+            </label>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
+            <button className="secondary-button" type="button" onClick={() => setIsWeddingFormOpen(false)}>Cancelar</button>
+            <button className="primary-button" type="submit">Crear proyecto completo</button>
+          </div>
+        </form>
       </Modal>
 
       {/* Form modal */}

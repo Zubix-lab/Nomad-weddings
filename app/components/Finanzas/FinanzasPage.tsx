@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { AlertTriangle, BellPlus, CheckCircle2, CreditCard, FileText, RotateCcw, Trash2, WalletCards } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import type { Event, WorkspaceBlock } from "@/lib/types";
+import type { CompanyFinanceKind, CompanyFinanceRecord, CompanyFinanceStatus, Event, WorkspaceBlock } from "@/lib/types";
 
 const TODAY = new Date("2026-07-03T00:00:00");
 
@@ -16,6 +16,18 @@ type PaymentDraft = {
   pageId: string;
 };
 
+type FinanceScope = "boda" | "empresa";
+
+type CompanyDraft = {
+  kind: CompanyFinanceKind;
+  title: string;
+  category: string;
+  amount: string;
+  dueDate: string;
+  status: CompanyFinanceStatus;
+  notes: string;
+};
+
 const emptyPaymentDraft: PaymentDraft = {
   title: "",
   amount: "",
@@ -23,6 +35,16 @@ const emptyPaymentDraft: PaymentDraft = {
   reminderDate: "",
   owner: "Nomad",
   pageId: "",
+};
+
+const emptyCompanyDraft: CompanyDraft = {
+  kind: "gasto",
+  title: "",
+  category: "",
+  amount: "",
+  dueDate: "",
+  status: "pendiente",
+  notes: "",
 };
 
 function currency(value: number): string {
@@ -69,9 +91,15 @@ export function FinanzasPage({
     addWorkspacePage,
     addWorkspaceBlock,
     updateWorkspaceBlock,
-    deleteWorkspaceBlock
+    deleteWorkspaceBlock,
+    companyFinanceRecords,
+    addCompanyFinanceRecord,
+    updateCompanyFinanceRecord,
+    deleteCompanyFinanceRecord
   } = useApp();
   const [draft, setDraft] = useState<PaymentDraft>(emptyPaymentDraft);
+  const [scope, setScope] = useState<FinanceScope>("boda");
+  const [companyDraft, setCompanyDraft] = useState<CompanyDraft>(emptyCompanyDraft);
   const event = events.find((item) => item.id === activeEventId) || events[0];
   const eventId = event?.id || "";
 
@@ -164,8 +192,53 @@ export function FinanzasPage({
     });
   };
 
+  const updateCompanyDraft = (patch: Partial<CompanyDraft>) => {
+    setCompanyDraft((current) => {
+      const next = { ...current, ...patch };
+      if (patch.kind === "ingreso" && current.status === "pagado") next.status = "pendiente";
+      if (patch.kind === "gasto" && current.status === "cobrado") next.status = "pendiente";
+      return next;
+    });
+  };
+
+  const handleCreateCompanyRecord = (submitEvent: React.FormEvent<HTMLFormElement>) => {
+    submitEvent.preventDefault();
+    const title = companyDraft.title.trim();
+    const amount = Number(companyDraft.amount);
+    if (!title || Number.isNaN(amount) || amount <= 0) return;
+
+    addCompanyFinanceRecord({
+      kind: companyDraft.kind,
+      title,
+      category: companyDraft.category.trim() || (companyDraft.kind === "ingreso" ? "Ingresos" : "Gastos"),
+      amount,
+      dueDate: companyDraft.dueDate || undefined,
+      status: companyDraft.status,
+      notes: companyDraft.notes.trim() || undefined,
+      createdAt: new Date().toISOString(),
+    });
+    setCompanyDraft(emptyCompanyDraft);
+  };
+
+  const toggleCompanyRecord = (record: CompanyFinanceRecord) => {
+    const closedStatus: CompanyFinanceStatus = record.kind === "ingreso" ? "cobrado" : "pagado";
+    const isClosed = record.status === closedStatus;
+    updateCompanyFinanceRecord({
+      ...record,
+      status: isClosed ? "pendiente" : closedStatus,
+      paidAt: isClosed ? undefined : formatInputDate(TODAY),
+    });
+  };
+
   return (
     <div style={{ display: "grid", gap: "18px" }}>
+      <div className="finance-scope-switch" role="tablist" aria-label="Vista de finanzas">
+        <button type="button" className={scope === "boda" ? "active" : ""} onClick={() => setScope("boda")}>Boda activa</button>
+        <button type="button" className={scope === "empresa" ? "active" : ""} onClick={() => setScope("empresa")}>Empresa</button>
+      </div>
+
+      {scope === "boda" ? (
+        <>
       <section className="screen-grid">
         <Metric label="Presupuesto boda" value={currency(event?.totalBudget || 0)} detail={event?.name || "Sin boda activa"} icon={<WalletCards size={18} />} />
         <Metric label="Servicios estimados" value={currency(contractedSpend)} detail={`${serviceSpend.length} partidas vinculadas`} icon={<CreditCard size={18} />} />
@@ -312,6 +385,17 @@ export function FinanzasPage({
           })}
         </div>
       </section>
+        </>
+      ) : (
+        <CompanyFinanceView
+          records={companyFinanceRecords}
+          draft={companyDraft}
+          updateDraft={updateCompanyDraft}
+          onSubmit={handleCreateCompanyRecord}
+          onToggle={toggleCompanyRecord}
+          onDelete={deleteCompanyFinanceRecord}
+        />
+      )}
     </div>
   );
 }
@@ -324,5 +408,118 @@ function Metric({ label, value, detail, icon }: { label: string; value: string |
       <strong>{value}</strong>
       <span>{detail}</span>
     </section>
+  );
+}
+
+function CompanyFinanceView({
+  records,
+  draft,
+  updateDraft,
+  onSubmit,
+  onToggle,
+  onDelete
+}: {
+  records: CompanyFinanceRecord[];
+  draft: CompanyDraft;
+  updateDraft: (patch: Partial<CompanyDraft>) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  onToggle: (record: CompanyFinanceRecord) => void;
+  onDelete: (id: string) => void;
+}) {
+  const sortedRecords = [...records].sort((a, b) => {
+    const aTime = a.dueDate ? new Date(`${a.dueDate}T00:00:00`).getTime() : Number.MAX_SAFE_INTEGER;
+    const bTime = b.dueDate ? new Date(`${b.dueDate}T00:00:00`).getTime() : Number.MAX_SAFE_INTEGER;
+    return aTime - bTime;
+  });
+  const incomeRecords = records.filter((record) => record.kind === "ingreso");
+  const expenseRecords = records.filter((record) => record.kind === "gasto");
+  const income = incomeRecords.reduce((sum, record) => sum + Number(record.amount), 0);
+  const expenses = expenseRecords.reduce((sum, record) => sum + Number(record.amount), 0);
+  const pending = records.filter((record) => record.status === "pendiente").reduce((sum, record) => sum + Number(record.amount), 0);
+  const cashIn = records.filter((record) => record.kind === "ingreso" && record.status === "cobrado").reduce((sum, record) => sum + Number(record.amount), 0);
+  const cashOut = records.filter((record) => record.kind === "gasto" && record.status === "pagado").reduce((sum, record) => sum + Number(record.amount), 0);
+
+  return (
+    <>
+      <section className="screen-grid">
+        <Metric label="Ingresos previstos" value={currency(income)} detail={`${incomeRecords.length} movimientos`} icon={<WalletCards size={18} />} />
+        <Metric label="Gastos previstos" value={currency(expenses)} detail={`${expenseRecords.length} movimientos`} icon={<CreditCard size={18} />} />
+        <Metric label="Caja cobrada" value={currency(cashIn - cashOut)} detail={`${currency(cashIn)} entradas · ${currency(cashOut)} salidas`} icon={<CheckCircle2 size={18} />} />
+        <Metric label="Pendiente empresa" value={currency(pending)} detail="Cobros o pagos sin cerrar" icon={<AlertTriangle size={18} />} />
+      </section>
+
+      <section className="panel full">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow">Contabilidad empresa</p>
+            <h3>Ingresos, gastos y vencimientos generales</h3>
+          </div>
+          <div className="panel-action"><WalletCards size={18} /></div>
+        </div>
+
+        <form className="finance-create-form company-finance-form" onSubmit={onSubmit}>
+          <select value={draft.kind} onChange={(eventInput) => updateDraft({ kind: eventInput.target.value as CompanyFinanceKind })} aria-label="Tipo de movimiento">
+            <option value="gasto">Gasto</option>
+            <option value="ingreso">Ingreso</option>
+          </select>
+          <input value={draft.title} onChange={(eventInput) => updateDraft({ title: eventInput.target.value })} placeholder="Concepto" aria-label="Concepto" />
+          <input value={draft.category} onChange={(eventInput) => updateDraft({ category: eventInput.target.value })} placeholder="Categoria" aria-label="Categoria" />
+          <input value={draft.amount} onChange={(eventInput) => updateDraft({ amount: eventInput.target.value })} placeholder="Importe" inputMode="decimal" aria-label="Importe" />
+          <input type="date" value={draft.dueDate} onChange={(eventInput) => updateDraft({ dueDate: eventInput.target.value })} aria-label="Vencimiento" />
+          <select value={draft.status} onChange={(eventInput) => updateDraft({ status: eventInput.target.value as CompanyFinanceStatus })} aria-label="Estado">
+            <option value="pendiente">Pendiente</option>
+            {draft.kind === "gasto" ? <option value="pagado">Pagado</option> : <option value="cobrado">Cobrado</option>}
+          </select>
+          <input value={draft.notes} onChange={(eventInput) => updateDraft({ notes: eventInput.target.value })} placeholder="Notas" aria-label="Notas" />
+          <button className="primary-button" type="submit">Anadir movimiento</button>
+        </form>
+
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Movimiento</th>
+                <th>Tipo</th>
+                <th>Categoria</th>
+                <th>Vencimiento</th>
+                <th>Estado</th>
+                <th>Importe</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedRecords.map((record) => (
+                <tr key={record.id}>
+                  <td>
+                    <strong>{record.title}</strong>
+                    {record.notes && <p style={{ margin: "4px 0 0", color: "var(--slate-grey)", fontSize: "12px" }}>{record.notes}</p>}
+                  </td>
+                  <td><span className={record.kind === "ingreso" ? "priority baja" : "priority media"}>{record.kind}</span></td>
+                  <td>{record.category}</td>
+                  <td>{record.dueDate || "Sin fecha"}</td>
+                  <td>{record.status}</td>
+                  <td><strong>{currency(Number(record.amount))}</strong></td>
+                  <td>
+                    <div className="finance-actions">
+                      <button className="mini-button" type="button" onClick={() => onToggle(record)} aria-label="Cambiar estado">
+                        {record.status === "pendiente" ? <CheckCircle2 size={14} /> : <RotateCcw size={14} />}
+                      </button>
+                      <button className="mini-button danger" type="button" onClick={() => onDelete(record.id)} aria-label="Eliminar movimiento">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {sortedRecords.length === 0 && (
+                <tr>
+                  <td colSpan={7}>Todavia no hay movimientos de empresa.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
   );
 }

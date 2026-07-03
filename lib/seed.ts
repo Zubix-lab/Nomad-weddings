@@ -15,7 +15,8 @@ import type {
   Reunion,
   WorkspacePage,
   WorkspaceBlock,
-  NotificationRecord
+  NotificationRecord,
+  CompanyFinanceRecord
 } from "./types";
 
 export const leads: Lead[] = [
@@ -3529,3 +3530,39 @@ export const workspaceBlocks: WorkspaceBlock[] = [
 ];
 
 export const notificationRecords: NotificationRecord[] = [];
+
+export const companyFinanceRecords: CompanyFinanceRecord[] = [
+  {
+    id: "company-finance-001",
+    kind: "gasto",
+    title: "Suscripcion herramientas operativas",
+    category: "Software",
+    amount: 185,
+    dueDate: "2026-07-10",
+    status: "pendiente",
+    notes: "CRM, automatizaciones y almacenamiento de contratos.",
+    createdAt: "2026-07-01T09:00:00.000Z"
+  },
+  {
+    id: "company-finance-002",
+    kind: "gasto",
+    title: "Gestoria y contabilidad trimestral",
+    category: "Administracion",
+    amount: 420,
+    dueDate: "2026-07-20",
+    status: "pendiente",
+    notes: "Preparar facturas y gastos deducibles del trimestre.",
+    createdAt: "2026-07-01T09:10:00.000Z"
+  },
+  {
+    id: "company-finance-003",
+    kind: "ingreso",
+    title: "Fee coordinacion Boda I&R",
+    category: "Servicios Nomad",
+    amount: 3600,
+    dueDate: "2026-08-01",
+    status: "pendiente",
+    notes: "Segundo tramo del servicio de coordinacion.",
+    createdAt: "2026-07-01T09:20:00.000Z"
+  }
+];

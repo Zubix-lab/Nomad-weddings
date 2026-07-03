@@ -564,6 +564,42 @@ select {
   white-space: nowrap;
 }
 
+.finance-scope-switch {
+  display: inline-flex;
+  width: fit-content;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-low);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.finance-scope-switch button {
+  min-height: 34px;
+  padding: 6px 14px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.finance-scope-switch button.active {
+  color: #fff;
+  background: var(--primary);
+}
+
+.company-finance-form {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.company-finance-form .primary-button {
+  width: 100%;
+  min-width: 0;
+}
+
 .finance-summary,
 .finance-actions {
   display: flex;

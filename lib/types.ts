@@ -12,6 +12,8 @@ export type WorkspaceBlockType = "task" | "note" | "payment" | "milestone" | "ve
 export type WorkspacePaymentStatus = "pendiente" | "programado" | "pagado" | "vencido";
 export type NotificationStatus = "active" | "snoozed" | "dismissed";
 export type NotificationSourceType = "workspace" | "calendar";
+export type CompanyFinanceKind = "ingreso" | "gasto";
+export type CompanyFinanceStatus = "pendiente" | "pagado" | "cobrado";
 
 export interface VendorPackage {
   name: "basico" | "estandar" | "premium" | string;
@@ -181,6 +183,19 @@ export interface NotificationRecord {
   snoozedUntil?: string;
   dismissedAt?: string;
   updatedAt: string;
+}
+
+export interface CompanyFinanceRecord {
+  id: string;
+  kind: CompanyFinanceKind;
+  title: string;
+  category: string;
+  amount: number;
+  dueDate?: string;
+  paidAt?: string;
+  status: CompanyFinanceStatus;
+  notes?: string;
+  createdAt: string;
 }
 
 export interface DocumentRecord {
