@@ -971,6 +971,133 @@ dd {
   border-color: var(--primary);
 }
 
+.wedding-project-board {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.wedding-project-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  background: var(--pure-white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.wedding-project-card.active {
+  border-color: var(--primary);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.wedding-project-main {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.wedding-project-main h4 {
+  margin: 6px 0 3px;
+  color: var(--primary);
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 20px;
+}
+
+.wedding-project-main p {
+  margin: 0;
+  color: var(--slate-grey);
+  font-size: 12px;
+}
+
+.wedding-project-main > strong {
+  color: var(--primary);
+  font-size: 24px;
+}
+
+.wedding-project-progress {
+  height: 7px;
+  overflow: hidden;
+  background: var(--surface-low);
+  border-radius: 999px;
+}
+
+.wedding-project-progress span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+
+.wedding-project-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.wedding-project-steps span {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 8px;
+  color: var(--slate-grey);
+  background: var(--surface-low);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.wedding-project-steps span.ready {
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.wedding-project-next {
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+  background: var(--surface-low);
+  border-radius: 8px;
+}
+
+.wedding-project-next small {
+  color: var(--slate-grey);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.wedding-project-next strong {
+  color: var(--primary);
+  font-size: 13px;
+}
+
+.wedding-project-next span {
+  color: var(--slate-grey);
+  font-size: 12px;
+}
+
+.wedding-project-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wedding-project-actions button {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
 .notion-page-button:hover,
 .notion-page-button.active {
   color: var(--primary);

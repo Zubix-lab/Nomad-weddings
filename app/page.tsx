@@ -6,6 +6,7 @@ import { Sidebar, type TabId } from "./components/Layout/Sidebar";
 import { Header } from "./components/Layout/Header";
 import type { Task } from "@/lib/types";
 import {
+  ArrowRight,
   Users,
   CalendarDays,
   AlertTriangle,
@@ -14,6 +15,9 @@ import {
   Bot,
   Wand2,
   ClipboardList,
+  FileText,
+  Heart,
+  Plus,
   Search
 } from "lucide-react";
 
@@ -35,16 +39,14 @@ export default function Home() {
     eventServices,
     tasks,
     calendarItems,
-    checklistItems,
+    workspacePages,
     workspaceBlocks,
     clients,
+    parejaProfiles,
     initialized,
     resetToSeed,
     exportBackup,
-    importBackup,
-    addTask,
-    updateTask,
-    deleteTask
+    importBackup
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
@@ -53,6 +55,7 @@ export default function Home() {
   const [backupStatus, setBackupStatus] = useState("");
   const [notionFocus, setNotionFocus] = useState({ pageId: "", blockId: "" });
   const [financeFocusPaymentId, setFinanceFocusPaymentId] = useState("");
+  const [createBodaRequestId, setCreateBodaRequestId] = useState(0);
   const backupInputRef = useRef<HTMLInputElement>(null);
   const selectedEventId = activeEventId || events[0]?.id || "";
 
@@ -65,9 +68,7 @@ export default function Home() {
   }, [events, selectedEventId]);
 
   // Calculations for Dashboard
-  const openTasks = checklistItems.filter((t) => !t.completada);
   const activeWorkspaceBlocks = workspaceBlocks.filter((block) => block.eventId === selectedEventId);
-  const openWorkspaceBlocks = activeWorkspaceBlocks.filter((block) => ["task", "milestone", "vendor"].includes(block.type) && !["hecha", "contratado"].includes(String(block.status)));
   const workspacePayments = activeWorkspaceBlocks.filter((block) => block.type === "payment");
   const pendingWorkspacePayments = workspacePayments.filter((block) => block.status !== "pagado");
   const overdueWorkspacePayments = pendingWorkspacePayments.filter((block) => block.dueDate && new Date(`${block.dueDate}T00:00:00`) < new Date("2026-07-03T00:00:00"));
@@ -86,6 +87,30 @@ export default function Home() {
     .slice(0, 4);
   const missingServices = eventServices.filter((s) => !s.vendorId);
   const totalSpend = eventServices.reduce((sum, s) => sum + Number(s.estimatedCost), 0);
+  const workspaceProjectCount = events.filter((event) => workspacePages.some((page) => page.eventId === event.id)).length;
+  const weddingProjects = events.map((event) => {
+    const eventPages = workspacePages.filter((page) => page.eventId === event.id);
+    const blocks = workspaceBlocks.filter((block) => block.eventId === event.id);
+    const actionableBlocks = blocks.filter((block) => ["task", "milestone", "payment", "vendor"].includes(block.type));
+    const completedBlocks = actionableBlocks.filter((block) => ["hecha", "pagado", "contratado"].includes(String(block.status)));
+    const profiles = parejaProfiles.filter((profile) => profile.eventId === event.id);
+    const pendingBlocks = blocks.filter((block) => ["task", "milestone", "vendor"].includes(block.type) && !["hecha", "contratado"].includes(String(block.status)));
+    const pendingPaymentsForEvent = blocks.filter((block) => block.type === "payment" && block.status !== "pagado");
+    const nextBlock = [...blocks]
+      .filter((block) => !["hecha", "pagado", "contratado"].includes(String(block.status)) && (block.reminderDate || block.dueDate))
+      .sort((a, b) => new Date(`${a.reminderDate || a.dueDate}T00:00:00`).getTime() - new Date(`${b.reminderDate || b.dueDate}T00:00:00`).getTime())[0];
+
+    return {
+      event,
+      pageCount: eventPages.length,
+      blockCount: blocks.length,
+      pendingCount: pendingBlocks.length,
+      pendingPayments: pendingPaymentsForEvent.length,
+      profilesCount: profiles.length,
+      nextBlock,
+      completion: actionableBlocks.length > 0 ? Math.round((completedBlocks.length / actionableBlocks.length) * 100) : 0
+    };
+  });
   const workspaceProgress = activeWorkspaceBlocks.length > 0
     ? Math.round((activeWorkspaceBlocks.filter((block) => ["hecha", "pagado", "contratado"].includes(String(block.status))).length / activeWorkspaceBlocks.length) * 100)
     : 0;
@@ -117,6 +142,23 @@ export default function Home() {
   const openNotion = (pageId?: string, blockId?: string) => {
     setFinanceFocusPaymentId("");
     setNotionFocus({ pageId: pageId || "", blockId: blockId || "" });
+    setActiveTab("notion");
+  };
+
+  const openBodaProject = (eventId?: string) => {
+    if (eventId) setActiveEventId(eventId);
+    setActiveTab("events");
+  };
+
+  const startCreateBoda = () => {
+    setActiveTab("events");
+    setCreateBodaRequestId((current) => current + 1);
+  };
+
+  const openNotionProject = (eventId: string) => {
+    setActiveEventId(eventId);
+    setFinanceFocusPaymentId("");
+    setNotionFocus({ pageId: "", blockId: "" });
     setActiveTab("notion");
   };
 
@@ -205,8 +247,11 @@ export default function Home() {
             <div style={{ gridColumn: "span 4", background: "var(--surface-low)", border: "1px solid var(--outline-variant)", borderRadius: "8px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <h2 style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: "28px", color: "var(--primary)", margin: "0 0 6px 0" }}>Nomad Weddings Workspace</h2>
-                <p style={{ margin: 0, color: "var(--slate-grey)", fontSize: "14px" }}>Espacio de trabajo y Notion corporativo para la organización de bodas, clientes y proveedores.</p>
+                <p style={{ margin: 0, color: "var(--slate-grey)", fontSize: "14px" }}>Crea una boda, completa la pareja y gestiona su roadmap Notion hasta el dia B.</p>
               </div>
+              <button className="primary-button" type="button" onClick={startCreateBoda} style={{ marginLeft: "auto", display: "inline-flex", gap: "7px", alignItems: "center" }}>
+                <Plus size={16} /> Crear boda
+              </button>
             </div>
 
             {/* 2. Metrics (KPIs) */}
@@ -217,9 +262,9 @@ export default function Home() {
               icon={<Users size={18} />}
             />
             <Metric
-              label="Bodas activas"
+              label="Proyectos Notion"
               value={events.length}
-              detail={`${openTasks.length + openWorkspaceBlocks.length} tareas y bloques abiertos`}
+              detail={`${workspaceProjectCount} con workspace creado`}
               icon={<CalendarDays size={18} />}
             />
             <Metric
@@ -242,10 +287,20 @@ export default function Home() {
               icon={<ClipboardList size={18} />}
             />
 
-            {/* 3. Notion-Style task board (Spans 3 columns) */}
+            {/* 3. Wedding project board (Spans 3 columns) */}
             <section className="panel" style={{ gridColumn: "span 3" }}>
-              <PanelHeader title="Gestor de Tareas Corporativo (Notion-style)" action={<ClipboardList size={18} />} />
-              <GlobalTaskManager tasks={tasks} addTask={addTask} updateTask={updateTask} deleteTask={deleteTask} />
+              <PanelHeader title="Proyectos Notion de bodas" action={<FileText size={18} />} />
+              <WeddingProjectsPanel
+                projects={weddingProjects}
+                activeEventId={selectedEventId}
+                onSelectProject={setActiveEventId}
+                onOpenBoda={openBodaProject}
+                onOpenNotion={openNotionProject}
+                onOpenFinance={(eventId) => {
+                  setActiveEventId(eventId);
+                  openFinance();
+                }}
+              />
             </section>
 
             {/* 4. Agenda & Alerts Sidebar (Spans 1 column) */}
@@ -320,7 +375,7 @@ export default function Home() {
 
         {activeTab === "events" && (
           <div style={{ display: "grid", gap: "24px" }}>
-            <BodasPage onSelectEvent={setActiveEventId} activeEventId={selectedEventId} />
+            <BodasPage onSelectEvent={setActiveEventId} activeEventId={selectedEventId} createRequestId={createBodaRequestId} />
             {selectedEventId && (
               <div style={{ borderTop: "2px solid var(--outline-variant)", paddingTop: "20px" }}>
                 <BodaDetail eventId={selectedEventId} />
@@ -491,6 +546,109 @@ function AgentDemoPanel({ activeEventId, leadId }: { activeEventId: string; lead
   );
 }
 
+interface WeddingProjectSummary {
+  event: {
+    id: string;
+    name: string;
+    date: string;
+    location: string;
+    guests: number;
+    totalBudget: number;
+    phase: string;
+  };
+  pageCount: number;
+  blockCount: number;
+  pendingCount: number;
+  pendingPayments: number;
+  profilesCount: number;
+  completion: number;
+  nextBlock?: {
+    title: string;
+    dueDate?: string;
+    reminderDate?: string;
+  };
+}
+
+function WeddingProjectsPanel({
+  projects,
+  activeEventId,
+  onSelectProject,
+  onOpenBoda,
+  onOpenNotion,
+  onOpenFinance
+}: {
+  projects: WeddingProjectSummary[];
+  activeEventId: string;
+  onSelectProject: (id: string) => void;
+  onOpenBoda: (id: string) => void;
+  onOpenNotion: (id: string) => void;
+  onOpenFinance: (id: string) => void;
+}) {
+  const formatDate = (date: string) => new Date(`${date}T00:00:00`).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+  const money = (value: number) => new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(value);
+
+  if (projects.length === 0) {
+    return (
+      <div className="empty-state" style={{ marginTop: "12px" }}>
+        Todavia no hay proyectos. Crea una boda para generar su ficha, pareja y roadmap.
+      </div>
+    );
+  }
+
+  return (
+    <div className="wedding-project-board">
+      {projects.map((project) => {
+        const active = project.event.id === activeEventId;
+        const coupleReady = project.profilesCount >= 2;
+        const notionReady = project.pageCount > 0;
+        const nextDate = project.nextBlock?.reminderDate || project.nextBlock?.dueDate;
+
+        return (
+          <article key={project.event.id} className={active ? "wedding-project-card active" : "wedding-project-card"}>
+            <button className="wedding-project-main" type="button" onClick={() => onSelectProject(project.event.id)}>
+              <div>
+                <span className="pill">{project.event.phase}</span>
+                <h4>{project.event.name}</h4>
+                <p>{formatDate(project.event.date)} · {project.event.location} · {project.event.guests} invitados</p>
+              </div>
+              <strong>{project.completion}%</strong>
+            </button>
+
+            <div className="wedding-project-progress">
+              <span style={{ width: `${project.completion}%` }} />
+            </div>
+
+            <div className="wedding-project-steps">
+              <span className={notionReady ? "ready" : ""}><FileText size={13} /> {project.pageCount} paginas</span>
+              <span className={coupleReady ? "ready" : ""}><Heart size={13} /> {project.profilesCount}/2 pareja</span>
+              <span><ClipboardList size={13} /> {project.pendingCount} pendientes</span>
+              <span><WalletCards size={13} /> {project.pendingPayments} pagos</span>
+            </div>
+
+            <div className="wedding-project-next">
+              <small>Siguiente paso</small>
+              <strong>{project.nextBlock?.title || "Completar briefing y roadmap inicial"}</strong>
+              <span>{nextDate ? formatDate(nextDate) : money(project.event.totalBudget)}</span>
+            </div>
+
+            <div className="wedding-project-actions">
+              <button className="secondary-button" type="button" onClick={() => onOpenBoda(project.event.id)}>
+                Ficha boda
+              </button>
+              <button className="primary-button" type="button" onClick={() => onOpenNotion(project.event.id)}>
+                Notion <ArrowRight size={14} />
+              </button>
+              <button className="secondary-button" type="button" onClick={() => onOpenFinance(project.event.id)}>
+                Finanzas
+              </button>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
 // Notion-style Global Task Manager Subcomponent
 interface GlobalTaskManagerProps {
   tasks: Task[];
@@ -499,6 +657,7 @@ interface GlobalTaskManagerProps {
   deleteTask: (id: string) => void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function GlobalTaskManager({ tasks, addTask, updateTask, deleteTask }: GlobalTaskManagerProps) {
   const [title, setTitle] = React.useState("");
   const [owner, setOwner] = React.useState("Soraya");

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { Plus, Calendar, Kanban, Search, MapPin } from "lucide-react";
 import type { Event, EventPhase } from "@/lib/types";
@@ -8,6 +8,7 @@ import type { Event, EventPhase } from "@/lib/types";
 interface BodasPageProps {
   onSelectEvent: (id: string) => void;
   activeEventId: string;
+  createRequestId?: number;
 }
 
 const PHASES: Array<{ id: EventPhase; label: string; desc: string }> = [
@@ -37,12 +38,20 @@ function calendarRange(date: string, hour: string): { startsAt: string; endsAt: 
   };
 }
 
-export default function BodasPage({ onSelectEvent, activeEventId }: BodasPageProps) {
+function splitCommaList(value: string): string[] {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+export default function BodasPage({ onSelectEvent, activeEventId, createRequestId = 0 }: BodasPageProps) {
   const {
     events,
     updateEvent,
     addEvent,
     addClient,
+    addParejaProfile,
     addEventService,
     addWorkspacePage,
     addWorkspaceBlock,
@@ -61,6 +70,21 @@ export default function BodasPage({ onSelectEvent, activeEventId }: BodasPagePro
   const [guests, setGuests] = useState(100);
   const [budget, setBudget] = useState(30000);
   const [style, setStyle] = useState("");
+  const [partnerOneName, setPartnerOneName] = useState("");
+  const [partnerOnePhone, setPartnerOnePhone] = useState("");
+  const [partnerOneEmail, setPartnerOneEmail] = useState("");
+  const [partnerOnePreferences, setPartnerOnePreferences] = useState("");
+  const [partnerTwoName, setPartnerTwoName] = useState("");
+  const [partnerTwoPhone, setPartnerTwoPhone] = useState("");
+  const [partnerTwoEmail, setPartnerTwoEmail] = useState("");
+  const [partnerTwoPreferences, setPartnerTwoPreferences] = useState("");
+  const [weddingPriorities, setWeddingPriorities] = useState("");
+  const [dietaryNeeds, setDietaryNeeds] = useState("");
+  const [riskNotes, setRiskNotes] = useState("");
+
+  useEffect(() => {
+    if (createRequestId > 0) setIsFormOpen(true);
+  }, [createRequestId]);
 
   const filteredEvents = events.filter((e) =>
     e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -69,6 +93,12 @@ export default function BodasPage({ onSelectEvent, activeEventId }: BodasPagePro
 
   const handleCreateBoda = (e: React.FormEvent) => {
     e.preventDefault();
+    const coupleParts = coupleName.split("&").map((item) => item.trim()).filter(Boolean);
+    const firstName = partnerOneName.trim() || coupleParts[0] || "Persona 1";
+    const secondName = partnerTwoName.trim() || coupleParts[1] || "Persona 2";
+    const preferences = splitCommaList(weddingPriorities);
+    const partnerOneNotes = [partnerOnePreferences, dietaryNeeds ? `Alergias/dietas: ${dietaryNeeds}` : ""].filter(Boolean).join("\n");
+    const partnerTwoNotes = [partnerTwoPreferences, dietaryNeeds ? `Alergias/dietas: ${dietaryNeeds}` : ""].filter(Boolean).join("\n");
     
     // Create new client first
     const clientId = "client-" + Date.now();
@@ -76,10 +106,11 @@ export default function BodasPage({ onSelectEvent, activeEventId }: BodasPagePro
       id: clientId,
       coupleName,
       contacts: [
-        { name: coupleName.split("&")[0]?.trim() || "Novio", role: "pareja", phone: "", email: "" }
+        { name: firstName, role: "pareja", phone: partnerOnePhone, email: partnerOneEmail },
+        { name: secondName, role: "pareja", phone: partnerTwoPhone, email: partnerTwoEmail }
       ],
-      preferences: [],
-      notes: "Creado desde alta de boda",
+      preferences,
+      notes: riskNotes || "Creado desde alta de boda",
       rgpdConsent: true
     });
 
@@ -96,10 +127,36 @@ export default function BodasPage({ onSelectEvent, activeEventId }: BodasPagePro
       style,
       totalBudget: Number(budget),
       phase: "descubrimiento",
-      risks: [],
-      dietaryNeeds: [],
+      risks: splitCommaList(riskNotes),
+      dietaryNeeds: splitCommaList(dietaryNeeds),
       accommodationNeeds: "",
       paymentStatus: "Pendiente primer pago"
+    });
+
+    addParejaProfile({
+      eventId,
+      nombre: firstName,
+      rol: "novia",
+      gustos: partnerOnePreferences,
+      alergias: dietaryNeeds,
+      contacto: {
+        telefono: partnerOnePhone,
+        email: partnerOneEmail
+      },
+      notas: partnerOneNotes
+    });
+
+    addParejaProfile({
+      eventId,
+      nombre: secondName,
+      rol: "novio",
+      gustos: partnerTwoPreferences,
+      alergias: dietaryNeeds,
+      contacto: {
+        telefono: partnerTwoPhone,
+        email: partnerTwoEmail
+      },
+      notas: partnerTwoNotes
     });
 
     const estimatedBudget = Number(budget);
@@ -267,6 +324,25 @@ export default function BodasPage({ onSelectEvent, activeEventId }: BodasPagePro
       owner: "Nomad"
     });
 
+    setCoupleName("");
+    setEventName("");
+    setDate("");
+    setLocation("");
+    setRegion("Pais Vasco");
+    setGuests(100);
+    setBudget(30000);
+    setStyle("");
+    setPartnerOneName("");
+    setPartnerOnePhone("");
+    setPartnerOneEmail("");
+    setPartnerOnePreferences("");
+    setPartnerTwoName("");
+    setPartnerTwoPhone("");
+    setPartnerTwoEmail("");
+    setPartnerTwoPreferences("");
+    setWeddingPriorities("");
+    setDietaryNeeds("");
+    setRiskNotes("");
     setIsFormOpen(false);
     onSelectEvent(eventId); // select newly created wedding
   };
@@ -506,7 +582,7 @@ export default function BodasPage({ onSelectEvent, activeEventId }: BodasPagePro
       {/* Creation Modal Form */}
       {isFormOpen && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1100, display: "grid", placeItems: "center", padding: "16px", background: "rgba(38, 63, 56, 0.4)", backdropFilter: "blur(4px)" }}>
-          <div style={{ width: "100%", maxWidth: "550px", background: "var(--surface)", border: "1px solid var(--outline-variant)", borderRadius: "12px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)", padding: "24px" }}>
+          <div style={{ width: "100%", maxWidth: "680px", maxHeight: "90vh", overflowY: "auto", background: "var(--surface)", border: "1px solid var(--outline-variant)", borderRadius: "12px", boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)", padding: "24px" }}>
             <h3 style={{ margin: "0 0 16px 0", fontSize: "20px", fontFamily: '"Source Serif 4", Georgia, serif', color: "var(--primary)" }}>
               Nueva Boda y Cuenta de Clientes
             </h3>
@@ -521,6 +597,36 @@ export default function BodasPage({ onSelectEvent, activeEventId }: BodasPagePro
                   onChange={(e) => setCoupleName(e.target.value)}
                 />
               </label>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <fieldset style={{ display: "grid", gap: "8px", border: "1px solid var(--line)", borderRadius: "8px", padding: "10px" }}>
+                  <legend className="eyebrow">Persona 1</legend>
+                  <input value={partnerOneName} onChange={(e) => setPartnerOneName(e.target.value)} placeholder="Nombre" aria-label="Nombre persona 1" />
+                  <input value={partnerOnePhone} onChange={(e) => setPartnerOnePhone(e.target.value)} placeholder="Telefono" aria-label="Telefono persona 1" />
+                  <input type="email" value={partnerOneEmail} onChange={(e) => setPartnerOneEmail(e.target.value)} placeholder="Email" aria-label="Email persona 1" />
+                  <textarea
+                    value={partnerOnePreferences}
+                    onChange={(e) => setPartnerOnePreferences(e.target.value)}
+                    placeholder="Gustos, prioridades, estilo personal..."
+                    aria-label="Preferencias persona 1"
+                    style={{ minHeight: "62px", width: "100%", padding: "8px", border: "1px solid var(--line)", borderRadius: "8px", fontFamily: "inherit", resize: "vertical" }}
+                  />
+                </fieldset>
+
+                <fieldset style={{ display: "grid", gap: "8px", border: "1px solid var(--line)", borderRadius: "8px", padding: "10px" }}>
+                  <legend className="eyebrow">Persona 2</legend>
+                  <input value={partnerTwoName} onChange={(e) => setPartnerTwoName(e.target.value)} placeholder="Nombre" aria-label="Nombre persona 2" />
+                  <input value={partnerTwoPhone} onChange={(e) => setPartnerTwoPhone(e.target.value)} placeholder="Telefono" aria-label="Telefono persona 2" />
+                  <input type="email" value={partnerTwoEmail} onChange={(e) => setPartnerTwoEmail(e.target.value)} placeholder="Email" aria-label="Email persona 2" />
+                  <textarea
+                    value={partnerTwoPreferences}
+                    onChange={(e) => setPartnerTwoPreferences(e.target.value)}
+                    placeholder="Gustos, prioridades, estilo personal..."
+                    aria-label="Preferencias persona 2"
+                    style={{ minHeight: "62px", width: "100%", padding: "8px", border: "1px solid var(--line)", borderRadius: "8px", fontFamily: "inherit", resize: "vertical" }}
+                  />
+                </fieldset>
+              </div>
 
               <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
                 Identificador de la boda (Nombre clave)
@@ -588,6 +694,34 @@ export default function BodasPage({ onSelectEvent, activeEventId }: BodasPagePro
                   onChange={(e) => setStyle(e.target.value)}
                 />
               </label>
+
+              <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
+                Preferencias clave de la boda
+                <input
+                  placeholder="Ej. ceremonia exterior, comida local, musica en directo"
+                  value={weddingPriorities}
+                  onChange={(e) => setWeddingPriorities(e.target.value)}
+                />
+              </label>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
+                  Dietas / alergias
+                  <input
+                    placeholder="Ej. vegetarianos, celiacos, frutos secos"
+                    value={dietaryNeeds}
+                    onChange={(e) => setDietaryNeeds(e.target.value)}
+                  />
+                </label>
+                <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
+                  Riesgos o notas iniciales
+                  <input
+                    placeholder="Ej. lluvia, transporte, familia sensible"
+                    value={riskNotes}
+                    onChange={(e) => setRiskNotes(e.target.value)}
+                  />
+                </label>
+              </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "16px" }}>
                 <button
