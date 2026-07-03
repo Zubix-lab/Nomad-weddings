@@ -124,6 +124,46 @@ create table event_services (
   status service_status not null default 'pendiente'
 );
 
+create table workspace_pages (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid not null references events(id) on delete cascade,
+  title text not null,
+  icon text not null default 'ClipboardList',
+  description text not null default '',
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create table workspace_blocks (
+  id uuid primary key default gen_random_uuid(),
+  page_id uuid not null references workspace_pages(id) on delete cascade,
+  event_id uuid not null references events(id) on delete cascade,
+  type text not null check (type in ('task', 'note', 'payment', 'milestone', 'vendor')),
+  title text not null,
+  body text,
+  owner text,
+  due_date date,
+  reminder_date date,
+  priority text check (priority in ('alta', 'media', 'baja')),
+  status text,
+  amount numeric(12,2),
+  vendor_id uuid references vendors(id) on delete set null,
+  linked_service_id uuid references event_services(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create table notification_records (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid not null references events(id) on delete cascade,
+  source_id text not null,
+  source_type text not null check (source_type in ('workspace', 'calendar')),
+  status text not null check (status in ('active', 'snoozed', 'dismissed')),
+  snoozed_until date,
+  dismissed_at date,
+  updated_at timestamptz not null default now(),
+  unique (event_id, source_id, source_type)
+);
+
 create table tasks (
   id uuid primary key default gen_random_uuid(),
   event_id uuid not null references events(id) on delete cascade,
@@ -186,3 +226,8 @@ create index idx_vendors_province_city on vendors(province, city);
 create index idx_vendors_price_confidence on vendors(price_confidence, price_from);
 create index idx_calendar_owner_time on calendar_items(owner_user_id, starts_at, ends_at);
 create index idx_tasks_event_status on tasks(event_id, status);
+create index idx_workspace_pages_event_order on workspace_pages(event_id, sort_order);
+create index idx_workspace_blocks_event_due on workspace_blocks(event_id, due_date);
+create index idx_workspace_blocks_event_reminder on workspace_blocks(event_id, reminder_date);
+create index idx_workspace_blocks_page_type on workspace_blocks(page_id, type);
+create index idx_notification_records_event_status on notification_records(event_id, status, snoozed_until);

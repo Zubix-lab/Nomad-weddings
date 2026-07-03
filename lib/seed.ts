@@ -12,7 +12,10 @@ import type {
   Vendor,
   VendorPrice,
   ParejaProfile,
-  Reunion
+  Reunion,
+  WorkspacePage,
+  WorkspaceBlock,
+  NotificationRecord
 } from "./types";
 
 export const leads: Lead[] = [
@@ -3311,3 +3314,218 @@ export const emailRecords: EmailRecord[] = [
     status: "enviado"
   }
 ];
+
+export const workspacePages: WorkspacePage[] = [
+  {
+    id: "workspace-page-001",
+    eventId: "event-001",
+    title: "12-9 meses antes",
+    icon: "CalendarDays",
+    description: "Decisiones estructurales: fecha, espacio, presupuesto y estilo.",
+    order: 1
+  },
+  {
+    id: "workspace-page-002",
+    eventId: "event-001",
+    title: "9-6 meses antes",
+    icon: "Users",
+    description: "Cerrar proveedores clave y transformar el concepto en plan operativo.",
+    order: 2
+  },
+  {
+    id: "workspace-page-003",
+    eventId: "event-001",
+    title: "3-1 meses antes",
+    icon: "ClipboardList",
+    description: "Confirmaciones, invitados, seating, pagos y producción final.",
+    order: 3
+  },
+  {
+    id: "workspace-page-004",
+    eventId: "event-001",
+    title: "Semana de la boda",
+    icon: "AlarmClock",
+    description: "Runbook, llamadas finales, montaje, transporte y plan B.",
+    order: 4
+  },
+  {
+    id: "workspace-page-005",
+    eventId: "event-001",
+    title: "Día B",
+    icon: "Heart",
+    description: "Cronograma vivo para coordinar ceremonia, banquete, fiesta e incidencias.",
+    order: 5
+  }
+];
+
+export const workspaceBlocks: WorkspaceBlock[] = [
+  {
+    id: "workspace-block-001",
+    pageId: "workspace-page-001",
+    eventId: "event-001",
+    type: "milestone",
+    title: "Concepto de boda aprobado",
+    body: "Bodega, piedra, madera, iluminación cálida y cocina vasca como ejes.",
+    status: "hecha",
+    owner: "Nomad",
+    dueDate: "2026-06-24",
+    reminderDate: "2026-06-20",
+    priority: "alta",
+    createdAt: "2026-06-24"
+  },
+  {
+    id: "workspace-block-002",
+    pageId: "workspace-page-002",
+    eventId: "event-001",
+    type: "vendor",
+    title: "Bodega Katxiña vinculada como espacio",
+    body: "Confirmar plan B lluvia, tiempos de montaje y margen de barra libre.",
+    vendorId: "vendor-003",
+    linkedServiceId: "service-001",
+    status: "contratado",
+    owner: "Aritz",
+    dueDate: "2026-07-08",
+    reminderDate: "2026-07-04",
+    priority: "alta",
+    createdAt: "2026-06-25"
+  },
+  {
+    id: "workspace-block-003",
+    pageId: "workspace-page-003",
+    eventId: "event-001",
+    type: "task",
+    title: "Crear primer seating con alergias",
+    body: "Separar familia cercana, mesa infantil y alergias críticas antes de enviar a catering.",
+    status: "pendiente",
+    owner: "Irene",
+    dueDate: "2026-07-14",
+    reminderDate: "2026-07-07",
+    priority: "alta",
+    createdAt: "2026-06-28"
+  },
+  {
+    id: "workspace-block-004",
+    pageId: "workspace-page-003",
+    eventId: "event-001",
+    type: "payment",
+    title: "Segundo pago Nomad",
+    body: "Pago programado una semana antes de la boda.",
+    status: "programado",
+    owner: "Nomad",
+    dueDate: "2026-08-29",
+    reminderDate: "2026-08-22",
+    amount: 4200,
+    priority: "media",
+    createdAt: "2026-06-28"
+  },
+  {
+    id: "workspace-block-005",
+    pageId: "workspace-page-004",
+    eventId: "event-001",
+    type: "task",
+    title: "Repasar cronograma con proveedores",
+    body: "Enviar runbook final y confirmar horas de llegada, montaje y desmontaje.",
+    status: "pendiente",
+    owner: "Aritz",
+    dueDate: "2026-09-01",
+    reminderDate: "2026-08-28",
+    priority: "alta",
+    createdAt: "2026-06-29"
+  },
+  {
+    id: "workspace-block-006",
+    pageId: "workspace-page-004",
+    eventId: "event-001",
+    type: "note",
+    title: "Nota interna de coordinación",
+    body: "La pareja prefiere pocas reuniones: enviar resumen por email y cerrar decisiones por bloques.",
+    owner: "Soraya",
+    priority: "media",
+    createdAt: "2026-06-29"
+  },
+  {
+    id: "workspace-block-007",
+    pageId: "workspace-page-001",
+    eventId: "event-001",
+    type: "payment",
+    title: "Reserva inicial del espacio",
+    body: "Bloquear fecha y condiciones despues de revisar contrato y plan de cancelacion.",
+    status: "programado",
+    owner: "Pareja",
+    dueDate: "2026-07-12",
+    reminderDate: "2026-07-06",
+    amount: 2500,
+    priority: "alta",
+    createdAt: "2026-06-26"
+  },
+  {
+    id: "workspace-block-008",
+    pageId: "workspace-page-002",
+    eventId: "event-001",
+    type: "task",
+    title: "Cerrar fotografo y musica",
+    body: "Pedir contratos definitivos, rider, dieta, horas extra y condiciones de entrega.",
+    status: "pendiente",
+    owner: "Nomad",
+    dueDate: "2026-07-22",
+    reminderDate: "2026-07-15",
+    priority: "alta",
+    createdAt: "2026-06-30"
+  },
+  {
+    id: "workspace-block-009",
+    pageId: "workspace-page-002",
+    eventId: "event-001",
+    type: "note",
+    title: "Alojamiento y transfers de invitados",
+    body: "Crear lista de hoteles cercanos, taxis recomendados y puntos de recogida.",
+    owner: "Irene",
+    priority: "media",
+    createdAt: "2026-06-30"
+  },
+  {
+    id: "workspace-block-010",
+    pageId: "workspace-page-003",
+    eventId: "event-001",
+    type: "task",
+    title: "Confirmar menus especiales",
+    body: "Enviar alergias y restricciones a cocina con version final de invitados.",
+    status: "pendiente",
+    owner: "Aritz",
+    dueDate: "2026-07-28",
+    reminderDate: "2026-07-21",
+    priority: "media",
+    createdAt: "2026-07-01"
+  },
+  {
+    id: "workspace-block-011",
+    pageId: "workspace-page-004",
+    eventId: "event-001",
+    type: "payment",
+    title: "Caja de incidencias y pagos finales",
+    body: "Reservar margen para horas extra, transporte, propinas pactadas y materiales de ultima hora.",
+    status: "programado",
+    owner: "Nomad",
+    dueDate: "2026-09-03",
+    reminderDate: "2026-08-30",
+    amount: 1800,
+    priority: "media",
+    createdAt: "2026-07-01"
+  },
+  {
+    id: "workspace-block-012",
+    pageId: "workspace-page-005",
+    eventId: "event-001",
+    type: "milestone",
+    title: "Checklist de ceremonia y banquete completado",
+    body: "Anillos, votos, sonido, seating impreso, timing de cocina y salida de transporte.",
+    status: "pendiente",
+    owner: "Coordinacion",
+    dueDate: "2026-09-05",
+    reminderDate: "2026-09-05",
+    priority: "alta",
+    createdAt: "2026-07-01"
+  }
+];
+
+export const notificationRecords: NotificationRecord[] = [];

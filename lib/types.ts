@@ -8,6 +8,10 @@ export type UserRole = "admin" | "colaborador" | "lectura";
 export type VendorStatus = "draft" | "reviewed" | "verified" | "outdated";
 export type VendorAvailabilityType = "local" | "se-desplaza" | "remoto";
 export type VendorPriceConfidence = "alta" | "media" | "baja";
+export type WorkspaceBlockType = "task" | "note" | "payment" | "milestone" | "vendor";
+export type WorkspacePaymentStatus = "pendiente" | "programado" | "pagado" | "vencido";
+export type NotificationStatus = "active" | "snoozed" | "dismissed";
+export type NotificationSourceType = "workspace" | "calendar";
 
 export interface VendorPackage {
   name: "basico" | "estandar" | "premium" | string;
@@ -131,6 +135,33 @@ export interface Task {
   status: TaskStatus;
 }
 
+export interface WorkspacePage {
+  id: string;
+  eventId: string;
+  title: string;
+  icon: string;
+  description: string;
+  order: number;
+}
+
+export interface WorkspaceBlock {
+  id: string;
+  pageId: string;
+  eventId: string;
+  type: WorkspaceBlockType;
+  title: string;
+  body?: string;
+  owner?: string;
+  dueDate?: string;
+  reminderDate?: string;
+  priority?: "alta" | "media" | "baja";
+  status?: TaskStatus | WorkspacePaymentStatus | ServiceStatus;
+  amount?: number;
+  vendorId?: string;
+  linkedServiceId?: string;
+  createdAt: string;
+}
+
 export interface CalendarItem {
   id: string;
   eventId?: string;
@@ -139,6 +170,17 @@ export interface CalendarItem {
   startsAt: string;
   endsAt: string;
   owner: string;
+}
+
+export interface NotificationRecord {
+  id: string;
+  eventId: string;
+  sourceId: string;
+  sourceType: NotificationSourceType;
+  status: NotificationStatus;
+  snoozedUntil?: string;
+  dismissedAt?: string;
+  updatedAt: string;
 }
 
 export interface DocumentRecord {

@@ -5,8 +5,10 @@ import {
   ClipboardList,
   Users,
   CalendarDays,
+  CalendarClock,
   Search,
   WalletCards,
+  FileText,
   ChevronLeft,
   ChevronRight,
   RefreshCw
@@ -16,7 +18,10 @@ export const tabs = [
   { id: "dashboard", label: "Dashboard", icon: ClipboardList },
   { id: "leads", label: "Clientes / CRM", icon: Users },
   { id: "events", label: "Bodas", icon: CalendarDays },
+  { id: "notion", label: "Notion", icon: FileText },
+  { id: "agenda", label: "Agenda", icon: CalendarClock },
   { id: "vendors", label: "Proveedores", icon: Search },
+  { id: "finance", label: "Finanzas", icon: WalletCards },
   { id: "simulator", label: "Simulador", icon: WalletCards }
 ] as const;
 

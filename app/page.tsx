@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useApp } from "@/context/AppContext";
 import { Sidebar, type TabId } from "./components/Layout/Sidebar";
 import { Header } from "./components/Layout/Header";
-import type { Event, Vendor, VendorPrice, Task } from "@/lib/types";
+import type { Task } from "@/lib/types";
 import {
   Users,
   CalendarDays,
@@ -23,17 +23,20 @@ import ClientesPage from "./components/Clientes/ClientesPage";
 import BodasPage from "./components/Bodas/BodasPage";
 import BodaDetail from "./components/Bodas/BodaDetail";
 import { BudgetSimulator } from "./components/Simulador/BudgetSimulator";
+import { NotionWorkspace } from "./components/Notion/NotionWorkspace";
+import { FinanzasPage } from "./components/Finanzas/FinanzasPage";
+import { AgendaPage } from "./components/Agenda/AgendaPage";
 
 export default function Home() {
   const {
     leads,
     events,
     vendors,
-    vendorPrices,
     eventServices,
     tasks,
     calendarItems,
     checklistItems,
+    workspaceBlocks,
     clients,
     initialized,
     resetToSeed,
@@ -57,8 +60,29 @@ export default function Home() {
 
   // Calculations for Dashboard
   const openTasks = checklistItems.filter((t) => !t.completada);
+  const activeWorkspaceBlocks = workspaceBlocks.filter((block) => block.eventId === selectedEventId);
+  const openWorkspaceBlocks = activeWorkspaceBlocks.filter((block) => ["task", "milestone", "vendor"].includes(block.type) && !["hecha", "contratado"].includes(String(block.status)));
+  const workspacePayments = activeWorkspaceBlocks.filter((block) => block.type === "payment");
+  const pendingWorkspacePayments = workspacePayments.filter((block) => block.status !== "pagado");
+  const overdueWorkspacePayments = pendingWorkspacePayments.filter((block) => block.dueDate && new Date(`${block.dueDate}T00:00:00`) < new Date("2026-07-03T00:00:00"));
+  const upcomingWorkspaceReminders = activeWorkspaceBlocks
+    .filter((block) => !["hecha", "pagado", "contratado"].includes(String(block.status)))
+    .map((block) => ({
+      ...block,
+      alertDate: block.reminderDate || block.dueDate || ""
+    }))
+    .filter((block) => block.alertDate)
+    .filter((block) => {
+      const distance = Math.ceil((new Date(`${block.alertDate}T00:00:00`).getTime() - new Date("2026-07-03T00:00:00").getTime()) / 86_400_000);
+      return distance >= 0 && distance <= 21;
+    })
+    .sort((a, b) => new Date(`${a.alertDate}T00:00:00`).getTime() - new Date(`${b.alertDate}T00:00:00`).getTime())
+    .slice(0, 4);
   const missingServices = eventServices.filter((s) => !s.vendorId);
   const totalSpend = eventServices.reduce((sum, s) => sum + Number(s.estimatedCost), 0);
+  const workspaceProgress = activeWorkspaceBlocks.length > 0
+    ? Math.round((activeWorkspaceBlocks.filter((block) => ["hecha", "pagado", "contratado"].includes(String(block.status))).length / activeWorkspaceBlocks.length) * 100)
+    : 0;
 
   const upcomingCalendar = useMemo(() => {
     return [...calendarItems]
@@ -75,7 +99,10 @@ export default function Home() {
       dashboard: "Dashboard de Operaciones",
       leads: "Clientes y CRM",
       events: "Fichas de Bodas",
+      notion: "Notion de Boda",
+      agenda: "Agenda Operativa",
       vendors: "Base de Proveedores",
+      finance: "Finanzas",
       simulator: "Simulador de Presupuesto"
     };
     return labels[tab];
@@ -128,7 +155,7 @@ export default function Home() {
             <Metric
               label="Bodas activas"
               value={events.length}
-              detail={`${checklistItems.filter((t) => !t.completada).length} tareas en bodas`}
+              detail={`${openTasks.length + openWorkspaceBlocks.length} tareas y bloques abiertos`}
               icon={<CalendarDays size={18} />}
             />
             <Metric
@@ -140,8 +167,15 @@ export default function Home() {
             <Metric
               label="Logística y presupuesto"
               value={currency(totalSpend)}
-              detail="Total estimado contratado"
+              detail={`${pendingWorkspacePayments.length} pagos · ${upcomingWorkspaceReminders.length} avisos`}
               icon={<WalletCards size={18} />}
+            />
+
+            <Metric
+              label="Progreso workspace"
+              value={`${workspaceProgress}%`}
+              detail={activeEvent?.name || "Sin boda activa"}
+              icon={<ClipboardList size={18} />}
             />
 
             {/* 3. Notion-Style task board (Spans 3 columns) */}
@@ -192,7 +226,17 @@ export default function Home() {
                       Bloqueada: {task.title} (Boda {events.find((e) => e.id === task.eventId)?.name}).
                     </p>
                   ))}
-                  {missingServices.length === 0 && tasks.filter((t) => t.status === "bloqueada").length === 0 && (
+                  {overdueWorkspacePayments.slice(0, 2).map((payment) => (
+                    <p key={payment.id} style={{ margin: 0, paddingLeft: "8px", borderLeft: "2px solid var(--error)", lineHeight: "1.4" }}>
+                      Pago vencido: <strong>{payment.title}</strong> ({payment.dueDate}).
+                    </p>
+                  ))}
+                  {upcomingWorkspaceReminders.map((block) => (
+                    <p key={block.id} style={{ margin: 0, paddingLeft: "8px", borderLeft: "2px solid var(--secondary)", lineHeight: "1.4" }}>
+                      Aviso Notion: <strong>{block.title}</strong> ({block.alertDate}).
+                    </p>
+                  ))}
+                  {missingServices.length === 0 && tasks.filter((t) => t.status === "bloqueada").length === 0 && overdueWorkspacePayments.length === 0 && upcomingWorkspaceReminders.length === 0 && (
                     <p style={{ color: "var(--slate-grey)", margin: 0 }}>
                       Sin alertas pendientes en este momento.
                     </p>
@@ -221,7 +265,20 @@ export default function Home() {
           </div>
         )}
 
+        {activeTab === "notion" && <NotionWorkspace activeEventId={selectedEventId} events={events} />}
+
+        {activeTab === "agenda" && (
+          <AgendaPage
+            activeEventId={selectedEventId}
+            events={events}
+            onOpenNotion={() => setActiveTab("notion")}
+            onOpenFinance={() => setActiveTab("finance")}
+          />
+        )}
+
         {activeTab === "vendors" && <ProveedoresPage />}
+
+        {activeTab === "finance" && <FinanzasPage activeEventId={selectedEventId} events={events} />}
 
         {activeTab === "simulator" && <BudgetSimulator />}
       </section>
@@ -246,15 +303,6 @@ function PanelHeader({ title, action }: { title: string; action: React.ReactNode
     <div className="panel-header">
       <h3>{title}</h3>
       <div className="panel-action">{action}</div>
-    </div>
-  );
-}
-
-function Permission({ role, access }: { role: string; access: string }) {
-  return (
-    <div className="permission" style={{ padding: "16px", border: "1px solid var(--line)", borderRadius: "8px", background: "var(--pure-white)" }}>
-      <strong>{role}</strong>
-      <p style={{ margin: "6px 0 0 0", color: "var(--slate-grey)", fontSize: "13px", lineHeight: "1.4" }}>{access}</p>
     </div>
   );
 }

@@ -4,7 +4,8 @@ import { createContext, useContext, useReducer, useEffect, useCallback, type Rea
 import type {
   Lead, Client, Event, Vendor, VendorPrice, EventService,
   Task, CalendarItem, DocumentRecord, Communication,
-  ParejaProfile, Reunion, ChecklistItemRecord, EmailRecord
+  ParejaProfile, Reunion, ChecklistItemRecord, EmailRecord,
+  WorkspacePage, WorkspaceBlock, NotificationRecord
 } from "@/lib/types";
 import {
   leads as seedLeads,
@@ -20,7 +21,10 @@ import {
   parejaProfiles as seedParejaProfiles,
   reuniones as seedReuniones,
   checklistItems as seedChecklistItems,
-  emailRecords as seedEmailRecords
+  emailRecords as seedEmailRecords,
+  workspacePages as seedWorkspacePages,
+  workspaceBlocks as seedWorkspaceBlocks,
+  notificationRecords as seedNotificationRecords
 } from "@/lib/seed";
 
 // --------------- helpers ---------------
@@ -45,6 +49,15 @@ function save<T>(key: string, data: T[]): void {
   try {
     localStorage.setItem(key, JSON.stringify(data));
   } catch { /* quota exceeded — silently fail */ }
+}
+
+function mergeSeedRecords<T extends { id: string }>(key: string, stored: T[], seed: T[]): T[] {
+  const storedIds = new Set(stored.map((item) => item.id));
+  const missingSeed = seed.filter((item) => !storedIds.has(item.id));
+  if (missingSeed.length === 0) return stored;
+  const next = [...stored, ...missingSeed];
+  save(key, next);
+  return next;
 }
 
 function mergeSeedVendorImages(storedVendors: Vendor[]): Vendor[] {
@@ -84,6 +97,9 @@ interface AppState {
   reuniones: Reunion[];
   checklistItems: ChecklistItemRecord[];
   emailRecords: EmailRecord[];
+  workspacePages: WorkspacePage[];
+  workspaceBlocks: WorkspaceBlock[];
+  notificationRecords: NotificationRecord[];
   initialized: boolean;
 }
 
@@ -114,6 +130,9 @@ const STORAGE_KEYS: Record<CollectionKey, string> = {
   reuniones: STORAGE_PREFIX + "reuniones",
   checklistItems: STORAGE_PREFIX + "checklistItems",
   emailRecords: STORAGE_PREFIX + "emailRecords",
+  workspacePages: STORAGE_PREFIX + "workspacePages",
+  workspaceBlocks: STORAGE_PREFIX + "workspaceBlocks",
+  notificationRecords: STORAGE_PREFIX + "notificationRecords",
 };
 
 function reducer(state: AppState, action: Action): AppState {
@@ -201,6 +220,17 @@ interface AppContextValue extends AppState {
   deleteChecklistItem: (id: string) => void;
   // EmailRecords
   addEmailRecord: (e: Omit<EmailRecord, "id"> & { id?: string }) => string;
+  // Workspace
+  addWorkspacePage: (p: Omit<WorkspacePage, "id"> & { id?: string }) => string;
+  updateWorkspacePage: (p: WorkspacePage) => void;
+  deleteWorkspacePage: (id: string) => void;
+  addWorkspaceBlock: (b: Omit<WorkspaceBlock, "id"> & { id?: string }) => string;
+  updateWorkspaceBlock: (b: WorkspaceBlock) => void;
+  deleteWorkspaceBlock: (id: string) => void;
+  // Notifications
+  addNotificationRecord: (n: Omit<NotificationRecord, "id"> & { id?: string }) => string;
+  updateNotificationRecord: (n: NotificationRecord) => void;
+  deleteNotificationRecord: (id: string) => void;
   // Utility
   generateId: () => string;
   resetToSeed: () => void;
@@ -223,6 +253,9 @@ const EMPTY_STATE: AppState = {
   reuniones: [],
   checklistItems: [],
   emailRecords: [],
+  workspacePages: [],
+  workspaceBlocks: [],
+  notificationRecords: [],
   initialized: false,
 };
 
@@ -248,6 +281,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         reuniones: load<Reunion>(STORAGE_KEYS.reuniones, seedReuniones),
         checklistItems: load<ChecklistItemRecord>(STORAGE_KEYS.checklistItems, seedChecklistItems),
         emailRecords: load<EmailRecord>(STORAGE_KEYS.emailRecords, seedEmailRecords),
+        workspacePages: mergeSeedRecords(STORAGE_KEYS.workspacePages, load<WorkspacePage>(STORAGE_KEYS.workspacePages, seedWorkspacePages), seedWorkspacePages),
+        workspaceBlocks: mergeSeedRecords(STORAGE_KEYS.workspaceBlocks, load<WorkspaceBlock>(STORAGE_KEYS.workspaceBlocks, seedWorkspaceBlocks), seedWorkspaceBlocks),
+        notificationRecords: load<NotificationRecord>(STORAGE_KEYS.notificationRecords, seedNotificationRecords),
       },
     });
   }, []);
@@ -326,6 +362,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteChecklistItem: (id) => remove("checklistItems", id),
     // EmailRecords
     addEmailRecord: (e) => add("emailRecords", e),
+    // Workspace
+    addWorkspacePage: (p) => add("workspacePages", p),
+    updateWorkspacePage: (p) => update("workspacePages", p as unknown as Record<string, unknown>),
+    deleteWorkspacePage: (id) => remove("workspacePages", id),
+    addWorkspaceBlock: (b) => add("workspaceBlocks", b),
+    updateWorkspaceBlock: (b) => update("workspaceBlocks", b as unknown as Record<string, unknown>),
+    deleteWorkspaceBlock: (id) => remove("workspaceBlocks", id),
+    // Notifications
+    addNotificationRecord: (n) => add("notificationRecords", n),
+    updateNotificationRecord: (n) => update("notificationRecords", n as unknown as Record<string, unknown>),
+    deleteNotificationRecord: (id) => remove("notificationRecords", id),
     // Utility
     generateId,
     resetToSeed: () => {
