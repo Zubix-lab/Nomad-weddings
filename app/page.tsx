@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useApp } from "@/context/AppContext";
-import { Sidebar, type TabId } from "./components/Layout/Sidebar";
+import { MobileTabBar, Sidebar, tabs, type TabId } from "./components/Layout/Sidebar";
 import { Header } from "./components/Layout/Header";
 import type { Task } from "@/lib/types";
 import {
@@ -30,6 +30,26 @@ import { NotionWorkspace } from "./components/Notion/NotionWorkspace";
 import { FinanzasPage } from "./components/Finanzas/FinanzasPage";
 import { AgendaPage } from "./components/Agenda/AgendaPage";
 
+function isTabId(value: string | null): value is TabId {
+  return Boolean(value && tabs.some((tab) => tab.id === value));
+}
+
+function getTabFromLocation(): TabId | null {
+  if (typeof window === "undefined") return null;
+  const hash = window.location.hash.replace(/^#/, "");
+  const hashParams = new URLSearchParams(hash);
+  const hashTab = hashParams.get("tab");
+  if (isTabId(hashTab)) return hashTab;
+  const queryTab = new URL(window.location.href).searchParams.get("tab");
+  return isTabId(queryTab) ? queryTab : null;
+}
+
+function urlForTab(tab: TabId): string {
+  const url = new URL(window.location.href);
+  url.hash = `tab=${tab}`;
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 export default function Home() {
   const {
     leads,
@@ -48,7 +68,7 @@ export default function Home() {
     importBackup
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<TabId>("dashboard");
+  const [activeTab, setActiveTabState] = useState<TabId>(() => getTabFromLocation() || "dashboard");
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
   const [activeEventId, setActiveEventId] = useState("");
   const [backupStatus, setBackupStatus] = useState("");
@@ -57,11 +77,71 @@ export default function Home() {
   const [createBodaRequestId, setCreateBodaRequestId] = useState(0);
   const backupInputRef = useRef<HTMLInputElement>(null);
   const bodaDetailRef = useRef<HTMLDivElement>(null);
+  const isRestoringHistoryRef = useRef(false);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const selectedEventId = activeEventId || events[0]?.id || "";
+
+  const setActiveTab = (tab: TabId) => {
+    setActiveTabState(tab);
+  };
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [activeTab]);
+
+  useEffect(() => {
+    const currentTab = getTabFromLocation() || "dashboard";
+    window.history.replaceState({ ...(window.history.state || {}), nomadTab: currentTab }, "", urlForTab(currentTab));
+
+    const handlePopState = () => {
+      const restoredTab = getTabFromLocation() || window.history.state?.nomadTab;
+      if (!isTabId(restoredTab)) return;
+      isRestoringHistoryRef.current = true;
+      setActiveTabState(restoredTab);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    if (isRestoringHistoryRef.current) {
+      isRestoringHistoryRef.current = false;
+      return;
+    }
+    if (getTabFromLocation() === activeTab && window.history.state?.nomadTab === activeTab) return;
+    window.history.pushState({ ...(window.history.state || {}), nomadTab: activeTab }, "", urlForTab(activeTab));
+  }, [activeTab]);
+
+  const handleMobileBack = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    setActiveTab("dashboard");
+  };
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLElement>) => {
+    const touch = event.touches[0];
+    if (!touch || touch.clientX > 36) {
+      touchStartRef.current = null;
+      return;
+    }
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent<HTMLElement>) => {
+    const start = touchStartRef.current;
+    const touch = event.changedTouches[0];
+    touchStartRef.current = null;
+    if (!start || !touch) return;
+    const deltaX = touch.clientX - start.x;
+    const deltaY = Math.abs(touch.clientY - start.y);
+    const elapsed = Date.now() - start.time;
+    if (deltaX > 78 && deltaY < 48 && elapsed < 850) {
+      window.history.back();
+    }
+  };
 
   // Determine active event
   const activeEvent = useMemo(() => {
@@ -214,7 +294,11 @@ export default function Home() {
 
   if (!initialized) {
     return (
-      <main className={sidebarMinimized ? "app-shell sidebar-minimized" : "app-shell"}>
+      <main
+        className={sidebarMinimized ? "app-shell sidebar-minimized" : "app-shell"}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} minimized={sidebarMinimized} setMinimized={setSidebarMinimized} />
         <section className="workspace">
           <div className="loading-panel">
@@ -223,12 +307,17 @@ export default function Home() {
             <p>Cargando datos locales, agenda, proveedores y checklist.</p>
           </div>
         </section>
+        <MobileTabBar activeTab={activeTab} setActiveTab={setActiveTab} />
       </main>
     );
   }
 
   return (
-    <main className={sidebarMinimized ? "app-shell sidebar-minimized" : "app-shell"}>
+    <main
+      className={sidebarMinimized ? "app-shell sidebar-minimized" : "app-shell"}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} minimized={sidebarMinimized} setMinimized={setSidebarMinimized} />
 
       <section className="workspace">
@@ -241,6 +330,7 @@ export default function Home() {
           onExportBackup={handleExportBackup}
           onImportBackup={() => backupInputRef.current?.click()}
           onResetSeed={resetToSeed}
+          onBack={handleMobileBack}
         />
         <input
           ref={backupInputRef}
@@ -255,7 +345,7 @@ export default function Home() {
         {activeTab === "dashboard" && (
           <div className="screen-grid">
             {/* 1. Header Banner */}
-            <div style={{ gridColumn: "span 4", background: "var(--surface-low)", border: "1px solid var(--outline-variant)", borderRadius: "8px", padding: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div className="dashboard-hero">
               <div>
                 <h2 style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: "28px", color: "var(--primary)", margin: "0 0 6px 0" }}>Nomad Weddings Workspace</h2>
                 <p style={{ margin: 0, color: "var(--slate-grey)", fontSize: "14px" }}>Crea una boda, completa la pareja y gestiona su roadmap Notion hasta el dia B.</p>
@@ -424,6 +514,7 @@ export default function Home() {
 
         {activeTab === "simulator" && <BudgetSimulator />}
       </section>
+      <MobileTabBar activeTab={activeTab} setActiveTab={setActiveTab} />
     </main>
   );
 }

@@ -25,6 +25,16 @@ export const tabs = [
 
 export type TabId = typeof tabs[number]["id"];
 
+const mobileLabels: Record<TabId, string> = {
+  dashboard: "Inicio",
+  events: "Bodas",
+  notion: "Notion",
+  agenda: "Agenda",
+  vendors: "Provs.",
+  finance: "Fin.",
+  simulator: "Sim."
+};
+
 interface SidebarProps {
   activeTab: TabId;
   setActiveTab: (tab: TabId) => void;
@@ -71,5 +81,29 @@ export function Sidebar({ activeTab, setActiveTab, minimized, setMinimized }: Si
         </button>
       </div>
     </aside>
+  );
+}
+
+export function MobileTabBar({ activeTab, setActiveTab }: Pick<SidebarProps, "activeTab" | "setActiveTab">) {
+  return (
+    <nav className="mobile-tabbar" aria-label="Navegacion principal movil">
+      <div className="mobile-tabbar-track">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              className={activeTab === tab.id ? "mobile-tab-item active" : "mobile-tab-item"}
+              onClick={() => setActiveTab(tab.id)}
+              aria-current={activeTab === tab.id ? "page" : undefined}
+            >
+              <Icon size={19} />
+              <span>{mobileLabels[tab.id]}</span>
+            </button>
+          );
+        })}
+      </div>
+    </nav>
   );
 }

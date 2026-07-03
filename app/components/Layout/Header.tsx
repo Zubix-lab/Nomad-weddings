@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Download, Printer, RefreshCw, Upload } from "lucide-react";
+import { ChevronLeft, Download, Printer, RefreshCw, Upload } from "lucide-react";
 import type { Event } from "@/lib/types";
 
 interface HeaderProps {
@@ -13,6 +13,7 @@ interface HeaderProps {
   onExportBackup: () => void;
   onImportBackup: () => void;
   onResetSeed: () => void;
+  onBack?: () => void;
 }
 
 export function Header({
@@ -23,14 +24,22 @@ export function Header({
   backupStatus,
   onExportBackup,
   onImportBackup,
-  onResetSeed
+  onResetSeed,
+  onBack
 }: HeaderProps) {
   return (
     <header className="topbar">
-      <div>
+      <div className="topbar-title">
+        {onBack && (
+          <button className="mobile-back-button" type="button" onClick={onBack} aria-label="Volver">
+            <ChevronLeft size={20} />
+          </button>
+        )}
+        <div>
         <p className="eyebrow">Operación Interna</p>
         <h2>{title}</h2>
         {backupStatus && <p className="backup-status">{backupStatus}</p>}
+        </div>
       </div>
       <div className="topbar-actions">
         <select

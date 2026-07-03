@@ -243,9 +243,9 @@ export default function ProveedoresPage() {
         ))}
       </section>
 
-      <div style={{ display: "grid", gap: "12px", background: "var(--pure-white)", padding: "16px", borderRadius: "8px", border: "1px solid var(--line)" }}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
-          <div style={{ flex: "1 1 320px", minWidth: "260px", position: "relative" }}>
+      <div className="vendor-filter-panel">
+        <div className="vendor-search-row">
+          <div className="vendor-search-box">
             <input
               type="text"
               placeholder="Buscar por nombre, ciudad, estilo, idioma, fuente..."
@@ -257,7 +257,7 @@ export default function ProveedoresPage() {
             <Search size={18} style={{ position: "absolute", left: "12px", top: "11px", color: "var(--slate-grey)" }} />
           </div>
 
-          <div style={{ display: "flex", border: "1px solid var(--line)", borderRadius: "8px", overflow: "hidden" }}>
+          <div className="vendor-view-toggle">
             {([
               ["grid", Grid, "Vista cuadrícula"],
               ["list", List, "Vista lista"],
@@ -294,7 +294,7 @@ export default function ProveedoresPage() {
           </button>
         </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+        <div className="vendor-filter-row">
           <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)} aria-label="Filtrar por categoría" style={{ width: "160px" }}>
             <option value="todas">Todas las categorías</option>
             {categorias.map((category) => (

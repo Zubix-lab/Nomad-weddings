@@ -2601,6 +2601,160 @@ dd {
   gap: 12px;
 }
 
+.mobile-tabbar,
+.mobile-back-button {
+  display: none;
+}
+
+[aria-label="Open Next.js Dev Tools"] {
+  display: none !important;
+}
+
+nextjs-portal,
+[data-nextjs-dev-tools-button] {
+  display: none !important;
+}
+
+.topbar-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.topbar-title > div {
+  min-width: 0;
+}
+
+.dashboard-hero {
+  grid-column: span 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px;
+  background: var(--surface-low);
+  border: 1px solid var(--outline-variant);
+  border-radius: 8px;
+}
+
+.boda-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.boda-detail-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 24px;
+  margin: 0;
+  margin-left: auto;
+}
+
+.boda-detail-tabs {
+  display: flex;
+  gap: 16px;
+  margin-top: 20px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--outline-variant);
+  scrollbar-width: none;
+}
+
+.boda-detail-tabs::-webkit-scrollbar,
+.mobile-tabbar-track::-webkit-scrollbar {
+  display: none;
+}
+
+.vendor-filter-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  background: var(--pure-white);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.vendor-search-row,
+.vendor-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.vendor-search-row {
+  align-items: center;
+}
+
+.vendor-search-box {
+  position: relative;
+  flex: 1 1 320px;
+  min-width: 260px;
+}
+
+.vendor-view-toggle {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(38, 63, 56, 0.4);
+  backdrop-filter: blur(4px);
+}
+
+.modal-sheet {
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--surface);
+  border: 1px solid var(--outline-variant);
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.modal-header h3 {
+  min-width: 0;
+  margin: 0;
+  color: var(--primary);
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.modal-close {
+  flex: 0 0 40px;
+  margin-left: auto;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
 @media (max-width: 1180px) {
   .screen-grid,
   .vendor-grid,
@@ -2796,8 +2950,326 @@ dd {
   }
 }
 
+@media (max-width: 760px) {
+  html {
+    scroll-padding-top: 96px;
+  }
+
+  body {
+    overscroll-behavior-y: contain;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .app-shell,
+  .app-shell.sidebar-minimized {
+    display: block;
+    min-height: 100dvh;
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .workspace {
+    max-width: none;
+    padding: 12px 12px calc(102px + env(safe-area-inset-bottom));
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 80;
+    gap: 10px;
+    align-items: stretch;
+    margin: -12px -12px 14px;
+    padding: calc(8px + env(safe-area-inset-top)) 12px 10px;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    border-bottom: 1px solid var(--outline-variant);
+    backdrop-filter: blur(14px);
+  }
+
+  .topbar-title {
+    width: 100%;
+  }
+
+  .mobile-back-button {
+    display: grid;
+    place-items: center;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    color: var(--primary);
+    background: var(--pure-white);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+  }
+
+  .topbar h2 {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 24px;
+    line-height: 1.05;
+    text-overflow: ellipsis;
+    white-space: normal;
+  }
+
+  .backup-status {
+    margin-top: 2px;
+  }
+
+  .topbar-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) repeat(4, 40px);
+    gap: 8px;
+    width: 100%;
+  }
+
+  .event-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .topbar-actions .icon-button {
+    width: 40px;
+    min-height: 40px;
+  }
+
+  .mobile-tabbar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 120;
+    display: block;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    border-top: 1px solid var(--outline-variant);
+    backdrop-filter: blur(18px);
+  }
+
+  .mobile-tabbar-track {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+    overflow-x: auto;
+    padding-bottom: 1px;
+    scrollbar-width: none;
+  }
+
+  .mobile-tab-item {
+    display: grid;
+    place-items: center;
+    gap: 3px;
+    min-height: 54px;
+    padding: 7px 3px;
+    color: var(--slate-grey);
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0;
+  }
+
+  .mobile-tab-item.active {
+    color: var(--primary);
+    background: var(--pure-white);
+    box-shadow: inset 0 0 0 1px var(--outline-variant);
+  }
+
+  .dashboard-hero {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .dashboard-hero h2 {
+    font-size: 25px !important;
+    line-height: 1.08;
+  }
+
+  .dashboard-hero .primary-button,
+  .wedding-project-actions button,
+  .agent-demo-actions .secondary-button {
+    width: 100%;
+  }
+
+  .screen-grid {
+    gap: 12px;
+  }
+
+  .panel {
+    padding: 14px;
+  }
+
+  .metric {
+    padding: 14px;
+  }
+
+  .metric p {
+    margin-top: 10px;
+  }
+
+  .metric strong {
+    font-size: 22px;
+  }
+
+  .panel-header {
+    align-items: flex-start;
+  }
+
+  .table-wrap {
+    margin-right: -14px;
+    margin-left: -14px;
+    padding: 0 14px 8px;
+    scroll-snap-type: x proximity;
+  }
+
+  table {
+    min-width: 680px;
+  }
+
+  th,
+  td {
+    padding: 10px 8px;
+  }
+
+  .boda-detail-header {
+    display: grid;
+    gap: 14px;
+  }
+
+  .boda-detail-header h3 {
+    font-size: 24px !important;
+    line-height: 1.1;
+  }
+
+  .boda-detail-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .boda-detail-kpis > div {
+    padding: 10px;
+    background: var(--surface-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: 8px;
+  }
+
+  .boda-detail-tabs {
+    gap: 18px;
+    margin-right: -20px;
+    margin-left: -20px;
+    padding: 0 20px;
+  }
+
+  .boda-detail-tabs button {
+    flex: 0 0 auto;
+    min-height: 44px;
+  }
+
+  .boda-summary-form {
+    padding: 10px;
+  }
+
+  .vendor-filter-panel {
+    padding: 12px;
+  }
+
+  .vendor-search-row {
+    align-items: stretch;
+  }
+
+  .vendor-search-box {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .vendor-view-toggle {
+    width: 132px;
+  }
+
+  .vendor-filter-row select {
+    flex: 1 1 calc(50% - 5px);
+    width: auto !important;
+    min-width: 0;
+  }
+
+  .vendor-card-media {
+    height: 176px;
+  }
+
+  .agenda-row-actions,
+  .finance-actions,
+  .notion-block-actions {
+    justify-content: flex-start;
+  }
+
+  .agent-demo-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .agent-demo-output-header {
+    display: grid;
+  }
+
+  .modal-backdrop {
+    align-items: end;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .modal-sheet {
+    max-height: 88dvh;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .modal-header {
+    padding: 14px 16px;
+  }
+
+  .modal-header h3 {
+    font-size: 19px;
+  }
+
+  .modal-body {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .topbar-actions .event-select {
+    grid-column: 1 / -1;
+  }
+
+  .topbar-actions .icon-button {
+    width: 100%;
+  }
+
+  .mobile-tabbar-track {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .vendor-filter-row select {
+    flex-basis: 100%;
+  }
+
+  .agent-demo-actions,
+  .wedding-project-steps,
+  .wedding-project-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media print {
   .sidebar,
+  .mobile-tabbar,
   .topbar-actions,
   .nav-list,
   .simulator-bottom-bar {

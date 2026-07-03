@@ -212,7 +212,7 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
     <div style={{ display: "grid", gap: "20px" }}>
       {/* Wedding Header Panel */}
       <div className="panel full" style={{ padding: "20px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", flexWrap: "wrap", gap: "10px" }}>
+        <div className="boda-detail-header">
           <div>
             <span className="pill">{event.phase.toUpperCase()}</span>
             <h3 style={{ margin: "6px 0 2px 0", fontSize: "28px", fontFamily: '"Source Serif 4", Georgia, serif', color: "var(--primary)" }}>
@@ -223,7 +223,7 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
             </p>
           </div>
           
-          <dl style={{ display: "grid", gridTemplateColumns: "repeat(4, auto)", gap: "24px", margin: 0, marginLeft: "auto" }}>
+          <dl className="boda-detail-kpis">
             <div>
               <dt style={{ color: "var(--slate-grey)", fontSize: "11px", textTransform: "uppercase" }}>Fecha Boda</dt>
               <dd style={{ margin: "2px 0 0 0", fontSize: "16px", fontWeight: "bold", color: "var(--primary)" }}>
@@ -252,7 +252,7 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
         </div>
 
         {/* Tabs navigation */}
-        <div style={{ display: "flex", borderBottom: "1px solid var(--outline-variant)", marginTop: "20px", gap: "16px" }}>
+        <div className="boda-detail-tabs">
           {(["resumen", "pareja", "servicios", "reuniones", "checklist", "horario"] as TabType[]).map((tab) => (
             <button
               key={tab}
