@@ -5,12 +5,12 @@ import Image from "next/image";
 import { Modal } from "../UI/Modal";
 import type { Vendor, VendorPrice } from "@/lib/types";
 import { categorias } from "@/lib/categorias";
-import { Mail, Phone, Globe, Edit, Trash, Plus, MapPin, ChevronLeft, ChevronRight, Star, ExternalLink, Loader2 } from "lucide-react";
+import { Mail, Phone, Globe, Edit, Trash, Plus, MapPin, ChevronLeft, ChevronRight, Star, ExternalLink, Loader2, Save } from "lucide-react";
 import { MapaProveedores } from "./MapaProveedores";
 import {
   getVendorAvailability,
-  getVendorContactUrl,
   getVendorLastCheckedAt,
+  getVendorMapsUrl,
   getVendorPriceConfidence,
   getVendorPriceRange,
   getVendorProvince,
@@ -28,6 +28,7 @@ interface ProveedorDetailProps {
   vendor: Vendor | undefined;
   prices: VendorPrice[];
   onEdit: (vendor: Vendor) => void;
+  onUpdate?: (vendor: Vendor) => void;
   onDelete: (id: string) => void;
   onAddPrice?: (vendorId: string) => void;
 }
@@ -84,6 +85,7 @@ export function ProveedorDetail({
   vendor,
   prices,
   onEdit,
+  onUpdate,
   onDelete,
   onAddPrice
 }: ProveedorDetailProps) {
@@ -93,12 +95,14 @@ export function ProveedorDetail({
   const [isGoogleMediaLoading, setIsGoogleMediaLoading] = useState(false);
   const [googleMediaError, setGoogleMediaError] = useState("");
   const [failedImageUrls, setFailedImageUrls] = useState<Set<string>>(new Set());
+  const [internalNoteDraft, setInternalNoteDraft] = useState("");
 
   useEffect(() => {
     setCurrentImgIndex(0);
     setGoogleMedia(null);
     setGoogleMediaError("");
     setFailedImageUrls(new Set());
+    setInternalNoteDraft(vendor?.notesInternal || "");
 
     if (!isOpen || !vendor) return;
 
@@ -146,8 +150,11 @@ export function ProveedorDetail({
   const vendorAvailability = getVendorAvailability(vendor);
   const priceConfidence = getVendorPriceConfidence(vendor, prices);
   const sourceUrl = getVendorSourceUrl(vendor);
-  const contactUrl = getVendorContactUrl(vendor);
+  const mapsUrl = googleMedia?.place?.googleMapsUri || getVendorMapsUrl(vendor);
+  const websiteUrl = vendor.website || googleMedia?.place?.websiteUri || "";
+  const contactUrl = vendor.contactUrl || websiteUrl || vendor.instagramUrl || "";
   const badges = getVendorQualityBadges(vendor, prices);
+  const isInternalNoteDirty = internalNoteDraft.trim() !== (vendor.notesInternal || "").trim();
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Detalle de Proveedor: ${vendor.name}`}>
@@ -609,9 +616,9 @@ export function ProveedorDetail({
                     <Mail size={14} /> Email: No disponible
                   </div>
                 )}
-                {vendor.website ? (
+                {websiteUrl ? (
                   <a
-                    href={vendor.website}
+                    href={websiteUrl}
                     target="_blank"
                     rel="noreferrer"
                     style={{
@@ -631,9 +638,27 @@ export function ProveedorDetail({
                     <Globe size={14} /> Sitio Web: No disponible
                   </div>
                 )}
-                {vendor.lat && vendor.lng ? (
+                {vendor.instagramUrl && (
                   <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(vendor.name)}+${vendor.lat},${vendor.lng}`}
+                    href={vendor.instagramUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      color: "var(--primary)",
+                      textDecoration: "underline",
+                      fontSize: "13px",
+                      fontWeight: 500
+                    }}
+                  >
+                    <ExternalLink size={14} /> Instagram
+                  </a>
+                )}
+                {mapsUrl ? (
+                  <a
+                    href={mapsUrl}
                     target="_blank"
                     rel="noreferrer"
                     style={{
@@ -680,6 +705,43 @@ export function ProveedorDetail({
               </div>
             </div>
           </div>
+
+          <section style={{ display: "grid", gap: "8px", padding: "12px", background: "var(--surface-low)", border: "1px solid var(--outline-variant)", borderRadius: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              <div>
+                <p className="eyebrow" style={{ margin: 0 }}>Nota interna editable</p>
+                <h4 style={{ margin: "2px 0 0 0", fontSize: "15px", fontFamily: '"Source Serif 4", Georgia, serif', color: "var(--primary)" }}>
+                  Seguimiento privado del proveedor
+                </h4>
+              </div>
+              <button
+                className="primary-button"
+                type="button"
+                disabled={!onUpdate || !isInternalNoteDirty}
+                onClick={() => {
+                  if (!onUpdate) return;
+                  onUpdate({ ...vendor, notesInternal: internalNoteDraft.trim() || undefined });
+                }}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "7px 10px",
+                  fontSize: "12px",
+                  opacity: !onUpdate || !isInternalNoteDirty ? 0.55 : 1
+                }}
+              >
+                <Save size={13} /> Guardar nota
+              </button>
+            </div>
+            <textarea
+              value={internalNoteDraft}
+              onChange={(event) => setInternalNoteDraft(event.target.value)}
+              aria-label="Nota interna del proveedor"
+              placeholder="Llamadas, riesgos, precios pendientes, impresiones de visita o siguiente accion."
+              style={{ width: "100%", minHeight: "88px", padding: "10px 12px", border: "1px solid var(--line)", borderRadius: "8px", fontFamily: "inherit", resize: "vertical", background: "var(--pure-white)", color: "var(--ink)" }}
+            />
+          </section>
 
           {/* Private Planner Notes */}
           <div>

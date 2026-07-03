@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import Image from "next/image";
 import { useApp } from "@/context/AppContext";
-import { CheckCircle2, Grid, List, Map, Plus, Search, Star } from "lucide-react";
+import { CheckCircle2, Globe, Grid, ImageIcon, List, Mail, Map, MapPin, Phone, Plus, Search, Star, StickyNote } from "lucide-react";
 import { categorias } from "@/lib/categorias";
 import { zonas } from "@/lib/zonas";
 import { ProveedorDetail } from "./ProveedorDetail";
@@ -11,13 +12,17 @@ import { MapaProveedores } from "./MapaProveedores";
 import type { Vendor, VendorAvailabilityType, VendorPriceConfidence, VendorStatus } from "@/lib/types";
 import {
   getVendorAvailability,
+  getVendorMapsUrl,
   getVendorPriceConfidence,
   getVendorPriceFrom,
   getVendorPriceRange,
+  getVendorPrimaryImage,
   getVendorProvince,
   getVendorQualityBadges,
   getVendorSourceUrl,
   getVendorStatus,
+  hasVendorActionableContact,
+  hasVendorImage,
   isVendorOutdated,
   priceConfidenceLabels,
   vendorAvailabilityLabels,
@@ -29,6 +34,32 @@ const TARGETS = {
   verified: 100,
   priceConfirmed: 50
 };
+
+function VendorCardImage({ vendor, imageUrl, priority }: { vendor: Vendor; imageUrl: string; priority?: boolean }) {
+  const [hasFailed, setHasFailed] = useState(false);
+
+  return (
+    <div className="vendor-card-media">
+      {imageUrl && !hasFailed ? (
+        <Image
+          src={imageUrl}
+          alt={`${vendor.name} imagen real`}
+          fill
+          unoptimized
+          priority={priority}
+          sizes="(max-width: 768px) 100vw, 360px"
+          style={{ objectFit: "cover" }}
+          onError={() => setHasFailed(true)}
+        />
+      ) : (
+        <div className="vendor-image-placeholder">
+          <ImageIcon size={22} />
+          <span>Imagen pendiente</span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ProveedoresPage() {
   const { vendors, vendorPrices, addVendor, updateVendor, deleteVendor } = useApp();
@@ -82,6 +113,21 @@ export default function ProveedoresPage() {
 
   const outdatedCount = useMemo(
     () => vendors.filter((vendor) => isVendorOutdated(vendor)).length,
+    [vendors]
+  );
+
+  const imageCount = useMemo(
+    () => vendors.filter((vendor) => hasVendorImage(vendor)).length,
+    [vendors]
+  );
+
+  const contactableCount = useMemo(
+    () => vendors.filter((vendor) => hasVendorActionableContact(vendor)).length,
+    [vendors]
+  );
+
+  const internalNoteCount = useMemo(
+    () => vendors.filter((vendor) => Boolean(vendor.notesInternal?.trim())).length,
     [vendors]
   );
 
@@ -172,12 +218,20 @@ export default function ProveedoresPage() {
     setIsFormOpen(true);
   };
 
+  const handleUpdateVendor = (vendor: Vendor) => {
+    updateVendor(vendor);
+    setActiveVendor(vendor);
+  };
+
   return (
     <div style={{ display: "grid", gap: "20px" }}>
       <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "12px" }}>
         {[
           { label: "Base total", value: vendors.length, note: `${basqueVendors.length}/${TARGETS.total} objetivo Pais Vasco` },
           { label: "Revisadas", value: reviewedCount, note: `${verifiedCount}/${TARGETS.verified} verificadas` },
+          { label: "Con imagen", value: imageCount, note: `${vendors.length - imageCount} pendientes` },
+          { label: "Contactables", value: contactableCount, note: "web, maps, telefono o email" },
+          { label: "Notas internas", value: internalNoteCount, note: "editables por usuario" },
           { label: "Precio confirmado", value: confirmedPriceCount, note: `${TARGETS.priceConfirmed} objetivo inicial` },
           { label: "A revisar", value: outdatedCount, note: "mensual/trimestral" }
         ].map((item) => (
@@ -360,15 +414,19 @@ export default function ProveedoresPage() {
         </div>
       ) : (
         <div className="vendor-grid">
-          {filteredVendors.map((vendor) => {
+          {filteredVendors.map((vendor, index) => {
             const category = categorias.find((item) => item.id === vendor.category);
             const status = getVendorStatus(vendor);
             const badges = getVendorQualityBadges(vendor, vendorPrices)
               .filter((badge) => badge !== vendorStatusLabels[status])
               .slice(0, 3);
+            const primaryImage = getVendorPrimaryImage(vendor);
+            const mapsUrl = getVendorMapsUrl(vendor);
 
             return (
               <article key={vendor.id} className="vendor-card" onClick={() => openVendor(vendor)} style={{ cursor: "pointer", transition: "all 0.2s" }}>
+                <VendorCardImage vendor={vendor} imageUrl={primaryImage} priority={index < 3} />
+
                 <div>
                   <p className="eyebrow">{category?.label || vendor.category} · {getVendorProvince(vendor)}{vendor.city ? ` · ${vendor.city}` : ""}</p>
                   <h3 style={{ margin: "4px 0" }}>{vendor.name}</h3>
@@ -384,6 +442,34 @@ export default function ProveedoresPage() {
                   {badges.map((badge) => (
                     <span key={badge} className="pill" style={{ fontSize: "10px", padding: "2px 6px" }}>{badge}</span>
                   ))}
+                </div>
+
+                <div className="vendor-card-contact-row" onClick={(event) => event.stopPropagation()}>
+                  {vendor.website && (
+                    <a href={vendor.website} target="_blank" rel="noreferrer" title="Abrir web" aria-label={`Abrir web de ${vendor.name}`}>
+                      <Globe size={14} />
+                    </a>
+                  )}
+                  {mapsUrl && (
+                    <a href={mapsUrl} target="_blank" rel="noreferrer" title="Abrir Google Maps" aria-label={`Abrir Google Maps de ${vendor.name}`}>
+                      <MapPin size={14} />
+                    </a>
+                  )}
+                  {vendor.phone && (
+                    <a href={`tel:${vendor.phone}`} title="Llamar" aria-label={`Llamar a ${vendor.name}`}>
+                      <Phone size={14} />
+                    </a>
+                  )}
+                  {vendor.email && (
+                    <a href={`mailto:${vendor.email}`} title="Enviar email" aria-label={`Enviar email a ${vendor.name}`}>
+                      <Mail size={14} />
+                    </a>
+                  )}
+                  {vendor.notesInternal && (
+                    <span className="vendor-card-note" title="Tiene nota interna">
+                      <StickyNote size={14} />
+                    </span>
+                  )}
                 </div>
 
                 <div className="vendor-stats">
@@ -403,6 +489,7 @@ export default function ProveedoresPage() {
         vendor={activeVendor}
         prices={vendorPrices.filter((price) => price.vendorId === activeVendor?.id)}
         onEdit={handleEditClick}
+        onUpdate={handleUpdateVendor}
         onDelete={deleteVendor}
       />
 

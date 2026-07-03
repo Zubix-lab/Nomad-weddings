@@ -21,6 +21,13 @@ function splitList(value: string): string[] {
     .filter(Boolean);
 }
 
+function splitLines(value: string): string[] {
+  return value
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export function ProveedorForm({ isOpen, onClose, onSave, vendor }: ProveedorFormProps) {
   const [name, setName] = useState("");
   const [category, setCategory] = useState(categorias[0].id);
@@ -56,6 +63,7 @@ export function ProveedorForm({ isOpen, onClose, onSave, vendor }: ProveedorForm
   const [lat, setLat] = useState<number | undefined>(undefined);
   const [lng, setLng] = useState<number | undefined>(undefined);
   const [googlePlaceId, setGooglePlaceId] = useState("");
+  const [imagesInput, setImagesInput] = useState("");
 
   useEffect(() => {
     if (vendor) {
@@ -92,6 +100,7 @@ export function ProveedorForm({ isOpen, onClose, onSave, vendor }: ProveedorForm
       setLat(vendor.lat);
       setLng(vendor.lng);
       setGooglePlaceId(vendor.googlePlaceId || "");
+      setImagesInput((vendor.images || []).join("\n"));
 
       const matchedZone = zonas.find((zone) => zone.label === vendor.region || zone.provincia === vendor.region || zone.provincia === vendor.province);
       if (matchedZone) setZoneId(matchedZone.id);
@@ -129,6 +138,7 @@ export function ProveedorForm({ isOpen, onClose, onSave, vendor }: ProveedorForm
       setNotes("");
       setNotesInternal("");
       setGooglePlaceId("");
+      setImagesInput("");
       setLat(defaultZone.center.lat);
       setLng(defaultZone.center.lng);
     }
@@ -152,6 +162,7 @@ export function ProveedorForm({ isOpen, onClose, onSave, vendor }: ProveedorForm
     const styleTags = splitList(styleTagsInput);
     const languages = splitList(languagesInput);
     const packages = splitList(packagesInput).map((packageName) => ({ name: packageName }));
+    const images = splitLines(imagesInput);
 
     onSave({
       id: vendor?.id,
@@ -189,7 +200,7 @@ export function ProveedorForm({ isOpen, onClose, onSave, vendor }: ProveedorForm
       lat: lat ? Number(lat) : undefined,
       lng: lng ? Number(lng) : undefined,
       googlePlaceId: googlePlaceId.trim() || undefined,
-      images: vendor?.images
+      images: images.length > 0 ? images : undefined
     });
     onClose();
   };
@@ -379,6 +390,16 @@ export function ProveedorForm({ isOpen, onClose, onSave, vendor }: ProveedorForm
             <input value={googleMapsUrl} onChange={(event) => setGoogleMapsUrl(event.target.value)} placeholder="https://maps.google.com/..." />
           </label>
         </div>
+
+        <label style={fieldStyle}>
+          Imagenes reales del lugar
+          <textarea
+            value={imagesInput}
+            onChange={(event) => setImagesInput(event.target.value)}
+            placeholder="Pega una URL de imagen por linea. Se usaran como galeria si Google Places no esta configurado."
+            style={{ width: "100%", minHeight: "74px", padding: "8px 10px", border: "1px solid var(--line)", borderRadius: "8px", fontFamily: "inherit", resize: "vertical" }}
+          />
+        </label>
 
         <label className="check-row" style={{ flexDirection: "row", gap: "10px", alignItems: "center", textTransform: "none" }}>
           <input type="checkbox" checked={commissionFree} onChange={(event) => setCommissionFree(event.target.checked)} />

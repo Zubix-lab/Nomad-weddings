@@ -39,11 +39,44 @@ export function getVendorProvince(vendor: Vendor): string {
 }
 
 export function getVendorContactUrl(vendor: Vendor): string {
-  return vendor.contactUrl || vendor.website || vendor.instagramUrl || vendor.googleMapsUrl || "";
+  return vendor.contactUrl || vendor.website || vendor.instagramUrl || getVendorMapsUrl(vendor);
 }
 
 export function getVendorSourceUrl(vendor: Vendor): string {
   return vendor.sourceUrl || vendor.website || vendor.googleMapsUrl || vendor.instagramUrl || "";
+}
+
+export function getVendorMapsUrl(vendor: Vendor): string {
+  if (vendor.googleMapsUrl) return vendor.googleMapsUrl;
+  if (vendor.lat && vendor.lng) {
+    const query = `${vendor.name} ${vendor.lat},${vendor.lng}`;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  }
+
+  const query = [vendor.name, vendor.city, getVendorProvince(vendor), vendor.region]
+    .filter(Boolean)
+    .join(", ");
+
+  return query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : "";
+}
+
+export function getVendorPrimaryImage(vendor: Vendor): string {
+  return vendor.images?.[0] || "";
+}
+
+export function hasVendorImage(vendor: Vendor): boolean {
+  return Boolean(vendor.googlePlaceId || vendor.images?.length);
+}
+
+export function hasVendorActionableContact(vendor: Vendor): boolean {
+  return Boolean(
+    vendor.contactUrl ||
+      vendor.website ||
+      vendor.instagramUrl ||
+      vendor.phone ||
+      vendor.email ||
+      getVendorMapsUrl(vendor)
+  );
 }
 
 export function getVendorStatus(vendor: Vendor): VendorStatus {
