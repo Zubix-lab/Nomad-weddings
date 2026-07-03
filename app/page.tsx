@@ -51,6 +51,7 @@ export default function Home() {
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
   const [activeEventId, setActiveEventId] = useState("");
   const [backupStatus, setBackupStatus] = useState("");
+  const [notionFocusPageId, setNotionFocusPageId] = useState("");
   const backupInputRef = useRef<HTMLInputElement>(null);
   const selectedEventId = activeEventId || events[0]?.id || "";
 
@@ -110,6 +111,11 @@ export default function Home() {
       simulator: "Simulador de Presupuesto"
     };
     return labels[tab];
+  };
+
+  const openNotion = (pageId?: string) => {
+    if (pageId) setNotionFocusPageId(pageId);
+    setActiveTab("notion");
   };
 
   const showBackupStatus = (message: string) => {
@@ -316,20 +322,20 @@ export default function Home() {
           </div>
         )}
 
-        {activeTab === "notion" && <NotionWorkspace activeEventId={selectedEventId} events={events} />}
+        {activeTab === "notion" && <NotionWorkspace activeEventId={selectedEventId} events={events} focusPageId={notionFocusPageId} />}
 
         {activeTab === "agenda" && (
           <AgendaPage
             activeEventId={selectedEventId}
             events={events}
-            onOpenNotion={() => setActiveTab("notion")}
+            onOpenNotion={() => openNotion()}
             onOpenFinance={() => setActiveTab("finance")}
           />
         )}
 
         {activeTab === "vendors" && <ProveedoresPage />}
 
-        {activeTab === "finance" && <FinanzasPage activeEventId={selectedEventId} events={events} />}
+        {activeTab === "finance" && <FinanzasPage activeEventId={selectedEventId} events={events} onOpenNotion={openNotion} />}
 
         {activeTab === "simulator" && <BudgetSimulator />}
       </section>

@@ -548,6 +548,55 @@ select {
   overflow-x: auto;
 }
 
+.finance-create-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.7fr) minmax(120px, 0.7fr) repeat(2, minmax(140px, 0.8fr)) minmax(120px, 0.7fr) minmax(190px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin: 16px 0 12px;
+  padding: 12px;
+  background: var(--surface-low);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.finance-create-form .primary-button {
+  white-space: nowrap;
+}
+
+.finance-summary,
+.finance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.finance-summary {
+  margin: 0 0 14px;
+}
+
+.finance-summary span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 10px;
+  color: var(--muted);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.finance-summary strong {
+  margin-right: 5px;
+  color: var(--primary);
+}
+
+.mini-button.danger {
+  color: var(--danger);
+}
+
 .agenda-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
@@ -2280,8 +2329,15 @@ dd {
   .notion-create button,
   .notion-edit select,
   .notion-edit input,
-  .notion-edit button {
+  .notion-edit button,
+  .finance-create-form select,
+  .finance-create-form input,
+  .finance-create-form button {
     width: 100%;
+  }
+
+  .finance-create-form {
+    grid-template-columns: 1fr;
   }
 
   .notion-view-toggle {

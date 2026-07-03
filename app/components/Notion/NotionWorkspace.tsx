@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AlarmClock,
   Bell,
@@ -303,7 +303,7 @@ function draftFromBlock(block: WorkspaceBlock): BlockDraft {
   };
 }
 
-export function NotionWorkspace({ activeEventId, events }: { activeEventId: string; events: Event[] }) {
+export function NotionWorkspace({ activeEventId, events, focusPageId = "" }: { activeEventId: string; events: Event[]; focusPageId?: string }) {
   const {
     workspacePages,
     workspaceBlocks,
@@ -331,6 +331,14 @@ export function NotionWorkspace({ activeEventId, events }: { activeEventId: stri
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [editingId, setEditingId] = useState("");
   const [editDraft, setEditDraft] = useState<BlockDraft>(emptyDraft);
+
+  useEffect(() => {
+    if (!focusPageId || !pages.some((page) => page.id === focusPageId)) return;
+    setActivePageId(focusPageId);
+    setFilterType("all");
+    setQuery("");
+    setViewMode("list");
+  }, [focusPageId, pages]);
 
   const blocksForEvent = useMemo(
     () => workspaceBlocks.filter((block) => block.eventId === eventId),
