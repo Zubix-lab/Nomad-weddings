@@ -633,6 +633,19 @@ select {
   min-height: 42px;
 }
 
+.field-error {
+  grid-column: 1 / -1;
+  margin: -2px 0 0;
+  color: var(--error);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.field-error.compact {
+  margin-top: 4px;
+  line-height: 1.25;
+}
+
 .finance-scope-switch {
   display: inline-flex;
   width: fit-content;

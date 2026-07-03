@@ -21,6 +21,13 @@ const PHASES: Array<{ id: EventPhase; label: string; desc: string }> = [
   { id: "semana-boda", label: "Semana Boda", desc: "Montaje final y día B" }
 ];
 
+function parsePositiveNumber(value: string): number | null {
+  const normalized = value.trim().replace(",", ".");
+  if (!normalized) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, createRequestId = 0 }: BodasPageProps) {
   const {
     events,
@@ -43,8 +50,8 @@ export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, 
   const [date, setDate] = useState("");
   const [location, setLocation] = useState("");
   const [region, setRegion] = useState("Pais Vasco");
-  const [guests, setGuests] = useState(100);
-  const [budget, setBudget] = useState(30000);
+  const [guests, setGuests] = useState("100");
+  const [budget, setBudget] = useState("30000");
   const [style, setStyle] = useState("");
   const [partnerOneName, setPartnerOneName] = useState("");
   const [partnerOnePhone, setPartnerOnePhone] = useState("");
@@ -57,6 +64,7 @@ export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, 
   const [weddingPriorities, setWeddingPriorities] = useState("");
   const [dietaryNeeds, setDietaryNeeds] = useState("");
   const [riskNotes, setRiskNotes] = useState("");
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     if (createRequestId > 0) setIsFormOpen(true);
@@ -69,6 +77,12 @@ export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, 
 
   const handleCreateBoda = (e: React.FormEvent) => {
     e.preventDefault();
+    const parsedGuests = parsePositiveNumber(guests);
+    const parsedBudget = parsePositiveNumber(budget);
+    if (parsedGuests === null || parsedBudget === null) {
+      setFormError("Invitados y presupuesto deben tener un numero mayor que 0.");
+      return;
+    }
     const project = createWeddingProject({
       addClient,
       addEvent,
@@ -83,8 +97,8 @@ export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, 
       date,
       location,
       region,
-      guests,
-      budget,
+      guests: Math.round(parsedGuests),
+      budget: parsedBudget,
       style,
       preferences: weddingPriorities,
       dietaryNeeds,
@@ -110,8 +124,8 @@ export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, 
     setDate("");
     setLocation("");
     setRegion("Pais Vasco");
-    setGuests(100);
-    setBudget(30000);
+    setGuests("100");
+    setBudget("30000");
     setStyle("");
     setPartnerOneName("");
     setPartnerOnePhone("");
@@ -124,6 +138,7 @@ export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, 
     setWeddingPriorities("");
     setDietaryNeeds("");
     setRiskNotes("");
+    setFormError("");
     setIsFormOpen(false);
     onSelectEvent(project.eventId); // select newly created wedding
   };
@@ -454,22 +469,27 @@ export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, 
                 <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
                   Nº Estimado de Invitados
                   <input
-                    type="number"
+                    inputMode="numeric"
                     value={guests}
-                    onChange={(e) => setGuests(Number(e.target.value))}
-                    min={10}
+                    onChange={(e) => {
+                      setGuests(e.target.value);
+                      setFormError("");
+                    }}
                   />
                 </label>
                 <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
                   Presupuesto Estimado (€)
                   <input
-                    type="number"
+                    inputMode="decimal"
                     value={budget}
-                    onChange={(e) => setBudget(Number(e.target.value))}
-                    min={1000}
+                    onChange={(e) => {
+                      setBudget(e.target.value);
+                      setFormError("");
+                    }}
                   />
                 </label>
               </div>
+              {formError && <p className="field-error">{formError}</p>}
 
               <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
                 Estilo y Concepto General

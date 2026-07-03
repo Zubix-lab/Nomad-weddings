@@ -13,6 +13,13 @@ interface ClientesPageProps {
   setActiveTab: (tab: TabId) => void;
 }
 
+function parsePositiveNumber(value: string): number | null {
+  const normalized = value.trim().replace(",", ".");
+  if (!normalized) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPageProps) {
   const {
     clients,
@@ -53,12 +60,13 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
   const [weddingDate, setWeddingDate] = useState("");
   const [weddingLocation, setWeddingLocation] = useState("");
   const [weddingRegion, setWeddingRegion] = useState("Pais Vasco");
-  const [weddingGuests, setWeddingGuests] = useState(100);
-  const [weddingBudget, setWeddingBudget] = useState(30000);
+  const [weddingGuests, setWeddingGuests] = useState("100");
+  const [weddingBudget, setWeddingBudget] = useState("30000");
   const [weddingStyle, setWeddingStyle] = useState("");
   const [weddingPriorities, setWeddingPriorities] = useState("");
   const [weddingDietaryNeeds, setWeddingDietaryNeeds] = useState("");
   const [weddingRiskNotes, setWeddingRiskNotes] = useState("");
+  const [weddingFormError, setWeddingFormError] = useState("");
 
   const filteredClients = clients.filter((c) =>
     c.coupleName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -107,12 +115,13 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
     setWeddingDate("");
     setWeddingLocation("");
     setWeddingRegion("Pais Vasco");
-    setWeddingGuests(100);
-    setWeddingBudget(30000);
+    setWeddingGuests("100");
+    setWeddingBudget("30000");
     setWeddingStyle(client.preferences.join(", "));
     setWeddingPriorities(client.preferences.join(", "));
     setWeddingDietaryNeeds("");
     setWeddingRiskNotes(client.notes);
+    setWeddingFormError("");
     setIsDetailOpen(false);
     setIsWeddingFormOpen(true);
   };
@@ -153,6 +162,12 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
   const handleCreateWeddingFromClient = (submitEvent: React.FormEvent<HTMLFormElement>) => {
     submitEvent.preventDefault();
     if (!weddingClient) return;
+    const parsedGuests = parsePositiveNumber(weddingGuests);
+    const parsedBudget = parsePositiveNumber(weddingBudget);
+    if (parsedGuests === null || parsedBudget === null) {
+      setWeddingFormError("Invitados y presupuesto deben tener un numero mayor que 0.");
+      return;
+    }
 
     const contactOne = weddingClient.contacts[0] || { name: "Persona 1", role: "novia", phone: "", email: "" };
     const contactTwo = weddingClient.contacts[1] || { name: "Persona 2", role: "novio", phone: "", email: "" };
@@ -171,8 +186,8 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
       date: weddingDate,
       location: weddingLocation,
       region: weddingRegion,
-      guests: weddingGuests,
-      budget: weddingBudget,
+      guests: Math.round(parsedGuests),
+      budget: parsedBudget,
       style: weddingStyle,
       preferences: weddingPriorities || weddingClient.preferences.join(", "),
       dietaryNeeds: weddingDietaryNeeds,
@@ -196,6 +211,7 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
     });
 
     setIsWeddingFormOpen(false);
+    setWeddingFormError("");
     setIsDetailOpen(false);
     onSelectEvent(project.eventId);
     setActiveTab("events");
@@ -511,13 +527,28 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
             <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
               Invitados estimados
-              <input type="number" min={10} value={weddingGuests} onChange={(eventInput) => setWeddingGuests(Number(eventInput.target.value))} />
+              <input
+                inputMode="numeric"
+                value={weddingGuests}
+                onChange={(eventInput) => {
+                  setWeddingGuests(eventInput.target.value);
+                  setWeddingFormError("");
+                }}
+              />
             </label>
             <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
               Presupuesto estimado
-              <input type="number" min={1000} value={weddingBudget} onChange={(eventInput) => setWeddingBudget(Number(eventInput.target.value))} />
+              <input
+                inputMode="decimal"
+                value={weddingBudget}
+                onChange={(eventInput) => {
+                  setWeddingBudget(eventInput.target.value);
+                  setWeddingFormError("");
+                }}
+              />
             </label>
           </div>
+          {weddingFormError && <p className="field-error">{weddingFormError}</p>}
 
           <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
             Estilo y concepto

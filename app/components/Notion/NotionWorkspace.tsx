@@ -33,12 +33,13 @@ type BlockDraft = {
   owner: string;
   dueDate: string;
   reminderDate: string;
-  amount: number | "";
+  amount: string;
   priority: "alta" | "media" | "baja";
   vendorId: string;
 };
 
-type BlueprintBlock = Omit<BlockDraft, "vendorId"> & {
+type BlueprintBlock = Omit<BlockDraft, "vendorId" | "amount"> & {
+  amount: number | "";
   status?: WorkspaceBlock["status"];
 };
 
@@ -253,6 +254,13 @@ function currency(value?: number): string {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(value);
 }
 
+function parsePositiveNumber(value: string): number | null {
+  const normalized = value.trim().replace(",", ".");
+  if (!normalized) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 function formatDate(value?: string): string {
   if (!value) return "Sin fecha";
   return new Date(`${value}T00:00:00`).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
@@ -297,7 +305,7 @@ function draftFromBlock(block: WorkspaceBlock): BlockDraft {
     owner: block.owner || "Nomad",
     dueDate: block.dueDate || "",
     reminderDate: block.reminderDate || "",
-    amount: block.amount ?? "",
+    amount: block.amount ? String(block.amount) : "",
     priority: block.priority || "media",
     vendorId: block.vendorId || ""
   };
@@ -348,6 +356,8 @@ export function NotionWorkspace({
   const [editingPageId, setEditingPageId] = useState("");
   const [pageTitleDraft, setPageTitleDraft] = useState("");
   const [pageDescriptionDraft, setPageDescriptionDraft] = useState("");
+  const [draftError, setDraftError] = useState("");
+  const [editError, setEditError] = useState("");
 
   useEffect(() => {
     const pageId = focusPageId || workspaceBlocks.find((block) => block.id === focusBlockId)?.pageId || "";
@@ -493,6 +503,11 @@ export function NotionWorkspace({
   const addBlock = (eventSubmit: React.FormEvent) => {
     eventSubmit.preventDefault();
     if (!draft.title.trim() || !selectedPageId || !eventId) return;
+    const parsedAmount = draft.type === "payment" ? parsePositiveNumber(draft.amount) : null;
+    if (draft.type === "payment" && parsedAmount === null) {
+      setDraftError("Introduce un importe mayor que 0 para crear el pago.");
+      return;
+    }
 
     addWorkspaceBlock({
       pageId: selectedPageId,
@@ -503,7 +518,7 @@ export function NotionWorkspace({
       owner: draft.owner.trim() || "Nomad",
       dueDate: draft.dueDate || undefined,
       reminderDate: draft.reminderDate || undefined,
-      amount: draft.type === "payment" && draft.amount !== "" ? Number(draft.amount) : undefined,
+      amount: draft.type === "payment" && parsedAmount !== null ? parsedAmount : undefined,
       vendorId: draft.vendorId || undefined,
       status: draft.type === "payment" ? "programado" : draft.type === "note" ? undefined : "pendiente",
       priority: draft.priority,
@@ -511,6 +526,7 @@ export function NotionWorkspace({
     });
 
     setDraft({ ...emptyDraft, type: draft.type, owner: draft.owner || "Nomad" });
+    setDraftError("");
   };
 
   const toggleBlock = (block: WorkspaceBlock) => {
@@ -530,10 +546,16 @@ export function NotionWorkspace({
   const startEdit = (block: WorkspaceBlock) => {
     setEditingId(block.id);
     setEditDraft(draftFromBlock(block));
+    setEditError("");
   };
 
   const saveEdit = (block: WorkspaceBlock) => {
     if (!editDraft.title.trim()) return;
+    const parsedAmount = editDraft.type === "payment" ? parsePositiveNumber(editDraft.amount) : null;
+    if (editDraft.type === "payment" && parsedAmount === null) {
+      setEditError("Introduce un importe mayor que 0 para guardar el pago.");
+      return;
+    }
     updateWorkspaceBlock({
       ...block,
       type: editDraft.type,
@@ -542,11 +564,12 @@ export function NotionWorkspace({
       owner: editDraft.owner.trim() || "Nomad",
       dueDate: editDraft.dueDate || undefined,
       reminderDate: editDraft.reminderDate || undefined,
-      amount: editDraft.type === "payment" && editDraft.amount !== "" ? Number(editDraft.amount) : undefined,
+      amount: editDraft.type === "payment" && parsedAmount !== null ? parsedAmount : undefined,
       priority: editDraft.priority,
       vendorId: editDraft.vendorId || undefined
     });
     setEditingId("");
+    setEditError("");
   };
 
   const updateDraft = (patch: Partial<BlockDraft>) => setDraft((current) => ({ ...current, ...patch }));
@@ -706,7 +729,10 @@ export function NotionWorkspace({
         </div>
 
         <form onSubmit={addBlock} className="notion-create">
-          <select value={draft.type} onChange={(eventInput) => updateDraft({ type: eventInput.target.value as WorkspaceBlockType })} aria-label="Tipo de bloque">
+          <select value={draft.type} onChange={(eventInput) => {
+            updateDraft({ type: eventInput.target.value as WorkspaceBlockType });
+            setDraftError("");
+          }} aria-label="Tipo de bloque">
             {Object.entries(blockLabels).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
             ))}
@@ -729,8 +755,18 @@ export function NotionWorkspace({
             </select>
           )}
           {draft.type === "payment" && (
-            <input type="number" value={draft.amount} onChange={(eventInput) => updateDraft({ amount: eventInput.target.value === "" ? "" : Number(eventInput.target.value) })} placeholder="Importe" aria-label="Importe" />
+            <input
+              inputMode="decimal"
+              value={draft.amount}
+              onChange={(eventInput) => {
+                updateDraft({ amount: eventInput.target.value });
+                setDraftError("");
+              }}
+              placeholder="Importe"
+              aria-label="Importe"
+            />
           )}
+          {draftError && <p className="field-error">{draftError}</p>}
           <textarea value={draft.body} onChange={(eventInput) => updateDraft({ body: eventInput.target.value })} placeholder="Notas, contexto, acuerdos o instrucciones..." />
           <button type="submit" className="primary-button" aria-label="Crear bloque">
             <Plus size={16} /> Añadir
@@ -759,7 +795,10 @@ export function NotionWorkspace({
                 <div className="notion-block-main">
                   {editing ? (
                     <div className="notion-edit">
-                      <select value={editDraft.type} onChange={(eventInput) => updateEditDraft({ type: eventInput.target.value as WorkspaceBlockType })} aria-label="Editar tipo de bloque">
+                      <select value={editDraft.type} onChange={(eventInput) => {
+                        updateEditDraft({ type: eventInput.target.value as WorkspaceBlockType });
+                        setEditError("");
+                      }} aria-label="Editar tipo de bloque">
                         {Object.entries(blockLabels).map(([value, label]) => (
                           <option key={value} value={value}>{label}</option>
                         ))}
@@ -782,8 +821,17 @@ export function NotionWorkspace({
                         </select>
                       )}
                       {editDraft.type === "payment" && (
-                        <input type="number" value={editDraft.amount} onChange={(eventInput) => updateEditDraft({ amount: eventInput.target.value === "" ? "" : Number(eventInput.target.value) })} aria-label="Editar importe" />
+                        <input
+                          inputMode="decimal"
+                          value={editDraft.amount}
+                          onChange={(eventInput) => {
+                            updateEditDraft({ amount: eventInput.target.value });
+                            setEditError("");
+                          }}
+                          aria-label="Editar importe"
+                        />
                       )}
+                      {editError && <p className="field-error">{editError}</p>}
                       <textarea value={editDraft.body} onChange={(eventInput) => updateEditDraft({ body: eventInput.target.value })} aria-label="Editar notas" />
                       <div className="notion-edit-actions">
                         <button className="primary-button" type="button" onClick={() => saveEdit(block)} aria-label="Guardar bloque">

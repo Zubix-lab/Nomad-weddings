@@ -49,14 +49,14 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
   const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
   const [serviceCategory, setServiceCategory] = useState("localizacion");
   const [serviceVendorId, setServiceVendorId] = useState("");
-  const [serviceCost, setServiceCost] = useState(1000);
+  const [serviceCost, setServiceCost] = useState("1000");
   const [serviceStatus, setServiceStatus] = useState<ServiceStatus>("pendiente");
   const [eventNameDraft, setEventNameDraft] = useState("");
   const [eventDateDraft, setEventDateDraft] = useState("");
   const [eventLocationDraft, setEventLocationDraft] = useState("");
   const [eventRegionDraft, setEventRegionDraft] = useState("");
-  const [eventGuestsDraft, setEventGuestsDraft] = useState(0);
-  const [eventBudgetDraft, setEventBudgetDraft] = useState(0);
+  const [eventGuestsDraft, setEventGuestsDraft] = useState("");
+  const [eventBudgetDraft, setEventBudgetDraft] = useState("");
   const [eventStyleDraft, setEventStyleDraft] = useState("");
   const [eventPhaseDraft, setEventPhaseDraft] = useState<EventPhase>("descubrimiento");
   const [eventRisksDraft, setEventRisksDraft] = useState("");
@@ -64,6 +64,10 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
   const [eventAccommodationDraft, setEventAccommodationDraft] = useState("");
   const [clientPrefsDraft, setClientPrefsDraft] = useState("");
   const [clientNotesDraft, setClientNotesDraft] = useState("");
+  const [summaryError, setSummaryError] = useState("");
+  const [serviceFormError, setServiceFormError] = useState("");
+  const [serviceCostDrafts, setServiceCostDrafts] = useState<Record<string, string>>({});
+  const [serviceCostErrors, setServiceCostErrors] = useState<Record<string, string>>({});
 
   // Get active wedding/event
   const event = events.find((e) => e.id === eventId) ?? events[0];
@@ -75,8 +79,8 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
     setEventDateDraft(event.date);
     setEventLocationDraft(event.location);
     setEventRegionDraft(event.region);
-    setEventGuestsDraft(event.guests);
-    setEventBudgetDraft(event.totalBudget);
+    setEventGuestsDraft(String(event.guests || ""));
+    setEventBudgetDraft(String(event.totalBudget || ""));
     setEventStyleDraft(event.style);
     setEventPhaseDraft(event.phase);
     setEventRisksDraft(event.risks.join(", "));
@@ -106,16 +110,29 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
   const eventDocs = documents.filter((d) => d.eventId === event.id);
 
 
+  const parsePositiveNumber = (value: string): number | null => {
+    const normalized = value.trim().replace(",", ".");
+    if (!normalized) return null;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  };
+
   const handleAddService = (e: React.FormEvent) => {
     e.preventDefault();
+    const parsedCost = parsePositiveNumber(serviceCost);
+    if (parsedCost === null) {
+      setServiceFormError("Introduce un coste estimado mayor que 0 antes de guardar.");
+      return;
+    }
     addEventService({
       eventId: event.id,
       category: serviceCategory,
       vendorId: serviceVendorId || undefined,
-      estimatedCost: Number(serviceCost),
+      estimatedCost: parsedCost,
       margin: 0,
       status: serviceStatus
     });
+    setServiceFormError("");
     setIsServiceFormOpen(false);
   };
 
@@ -123,14 +140,20 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
 
   const handleSaveSummary = (e: React.FormEvent) => {
     e.preventDefault();
+    const parsedGuests = parsePositiveNumber(eventGuestsDraft);
+    const parsedBudget = parsePositiveNumber(eventBudgetDraft);
+    if (parsedGuests === null || parsedBudget === null) {
+      setSummaryError("Invitados y presupuesto deben tener un numero mayor que 0.");
+      return;
+    }
     updateEvent({
       ...event,
       name: eventNameDraft.trim() || event.name,
       date: eventDateDraft,
       location: eventLocationDraft,
       region: eventRegionDraft,
-      guests: Number(eventGuestsDraft) || 0,
-      totalBudget: Number(eventBudgetDraft) || 0,
+      guests: Math.round(parsedGuests),
+      totalBudget: parsedBudget,
       style: eventStyleDraft,
       phase: eventPhaseDraft,
       risks: splitList(eventRisksDraft),
@@ -145,6 +168,7 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
         notes: clientNotesDraft,
       });
     }
+    setSummaryError("");
   };
 
   const handleUpdateServiceVendor = (service: EventService, vendorId: string) => {
@@ -161,10 +185,22 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
     });
   };
 
-  const handleUpdateServiceCost = (service: EventService, cost: number) => {
+  const handleUpdateServiceCost = (service: EventService, value: string, input?: HTMLInputElement) => {
+    const parsedCost = parsePositiveNumber(value);
+    if (parsedCost === null) {
+      setServiceCostErrors((current) => ({ ...current, [service.id]: "Introduce un coste mayor que 0." }));
+      window.setTimeout(() => input?.focus(), 0);
+      return;
+    }
     updateEventService({
       ...service,
-      estimatedCost: cost
+      estimatedCost: parsedCost
+    });
+    setServiceCostDrafts((current) => ({ ...current, [service.id]: String(parsedCost) }));
+    setServiceCostErrors((current) => {
+      const next = { ...current };
+      delete next[service.id];
+      return next;
     });
   };
 
@@ -262,8 +298,26 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
                 <option value="semana-boda">Semana boda</option>
               </select>
               <input value={eventRegionDraft} onChange={(e) => setEventRegionDraft(e.target.value)} placeholder="Region" aria-label="Region" />
-              <input type="number" value={eventGuestsDraft} onChange={(e) => setEventGuestsDraft(Number(e.target.value))} placeholder="Invitados" aria-label="Invitados" />
-              <input type="number" value={eventBudgetDraft} onChange={(e) => setEventBudgetDraft(Number(e.target.value))} placeholder="Presupuesto" aria-label="Presupuesto" />
+              <input
+                inputMode="numeric"
+                value={eventGuestsDraft}
+                onChange={(e) => {
+                  setEventGuestsDraft(e.target.value);
+                  setSummaryError("");
+                }}
+                placeholder="Invitados"
+                aria-label="Invitados"
+              />
+              <input
+                inputMode="decimal"
+                value={eventBudgetDraft}
+                onChange={(e) => {
+                  setEventBudgetDraft(e.target.value);
+                  setSummaryError("");
+                }}
+                placeholder="Presupuesto"
+                aria-label="Presupuesto"
+              />
               <input value={eventStyleDraft} onChange={(e) => setEventStyleDraft(e.target.value)} placeholder="Estilo y concepto" aria-label="Estilo y concepto" />
               <input value={clientPrefsDraft} onChange={(e) => setClientPrefsDraft(e.target.value)} placeholder="Preferencias de pareja" aria-label="Preferencias de pareja" />
               <input value={eventDietsDraft} onChange={(e) => setEventDietsDraft(e.target.value)} placeholder="Dietas y alergias" aria-label="Dietas y alergias" />
@@ -271,6 +325,7 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
               <input value={eventAccommodationDraft} onChange={(e) => setEventAccommodationDraft(e.target.value)} placeholder="Alojamiento" aria-label="Alojamiento" />
               <textarea value={clientNotesDraft} onChange={(e) => setClientNotesDraft(e.target.value)} placeholder="Notas internas de la cuenta cliente" aria-label="Notas internas de la cuenta cliente" />
               <button className="primary-button" type="submit">Guardar ficha</button>
+              {summaryError && <p className="field-error">{summaryError}</p>}
             </form>
           </section>
 
@@ -397,8 +452,9 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
               onClick={() => {
                 setServiceCategory("localizacion");
                 setServiceVendorId("");
-                setServiceCost(1000);
+                setServiceCost("1000");
                 setServiceStatus("pendiente");
+                setServiceFormError("");
                 setIsServiceFormOpen(true);
               }}
               style={{ display: "inline-flex", gap: "6px", alignItems: "center", minHeight: "34px", padding: "4px 10px", fontSize: "12px", marginLeft: "auto" }}
@@ -443,12 +499,22 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
                         </td>
                         <td>
                           <input
-                            type="number"
-                            value={service.estimatedCost}
-                            onChange={(e) => handleUpdateServiceCost(service, Number(e.target.value))}
+                            inputMode="decimal"
+                            value={serviceCostDrafts[service.id] ?? String(service.estimatedCost || "")}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setServiceCostDrafts((current) => ({ ...current, [service.id]: value }));
+                              setServiceCostErrors((current) => {
+                                const next = { ...current };
+                                delete next[service.id];
+                                return next;
+                              });
+                            }}
+                            onBlur={(e) => handleUpdateServiceCost(service, e.target.value, e.currentTarget)}
                             style={{ minHeight: "34px", width: "100px", padding: "4px" }}
                             aria-label="Costo estimado"
                           />
+                          {serviceCostErrors[service.id] && <p className="field-error compact">{serviceCostErrors[service.id]}</p>}
                         </td>
                         <td>
                           <select
@@ -527,11 +593,19 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
                     <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
                       Costo Estimado (€)
                       <input
-                        type="number"
+                        inputMode="decimal"
                         value={serviceCost}
-                        onChange={(e) => setServiceCost(Number(e.target.value))}
-                        min={0}
+                        onChange={(e) => {
+                          setServiceCost(e.target.value);
+                          setServiceFormError("");
+                        }}
+                        onBlur={(e) => {
+                          if (parsePositiveNumber(e.target.value) === null) {
+                            setServiceFormError("Introduce un coste estimado mayor que 0.");
+                          }
+                        }}
                       />
+                      {serviceFormError && <p className="field-error compact">{serviceFormError}</p>}
                     </label>
                     <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
                       Estado
