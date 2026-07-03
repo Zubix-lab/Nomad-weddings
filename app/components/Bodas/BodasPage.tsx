@@ -18,8 +18,36 @@ const PHASES: Array<{ id: EventPhase; label: string; desc: string }> = [
   { id: "semana-boda", label: "Semana Boda", desc: "Montaje final y día B" }
 ];
 
+const DEMO_TODAY = new Date("2026-07-03T00:00:00");
+
+function formatDate(date: Date): string {
+  return date.toISOString().split("T")[0];
+}
+
+function operationalDate(weddingDate: string, daysBeforeWedding: number, fallbackDaysFromToday: number): string {
+  const base = weddingDate ? new Date(`${weddingDate}T00:00:00`) : new Date(DEMO_TODAY);
+  base.setDate(base.getDate() + (weddingDate ? -daysBeforeWedding : fallbackDaysFromToday));
+  return formatDate(base);
+}
+
+function calendarRange(date: string, hour: string): { startsAt: string; endsAt: string } {
+  return {
+    startsAt: `${date}T${hour}:00`,
+    endsAt: `${date}T${hour}:45`,
+  };
+}
+
 export default function BodasPage({ onSelectEvent, activeEventId }: BodasPageProps) {
-  const { events, updateEvent, addEvent, addClient } = useApp();
+  const {
+    events,
+    updateEvent,
+    addEvent,
+    addClient,
+    addEventService,
+    addWorkspacePage,
+    addWorkspaceBlock,
+    addCalendarItem
+  } = useApp();
   const [viewMode, setViewMode] = useState<"kanban" | "list">("kanban");
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -72,6 +100,171 @@ export default function BodasPage({ onSelectEvent, activeEventId }: BodasPagePro
       dietaryNeeds: [],
       accommodationNeeds: "",
       paymentStatus: "Pendiente primer pago"
+    });
+
+    const estimatedBudget = Number(budget);
+    [
+      { category: "espacio", ratio: 0.28 },
+      { category: "catering", ratio: 0.34 },
+      { category: "fotografia", ratio: 0.08 },
+      { category: "musica", ratio: 0.07 },
+      { category: "decoracion", ratio: 0.09 }
+    ].forEach((service) => {
+      addEventService({
+        eventId,
+        category: service.category,
+        estimatedCost: Math.max(800, Math.round(estimatedBudget * service.ratio)),
+        margin: 0,
+        status: "pendiente"
+      });
+    });
+
+    const kickoffPageId = addWorkspacePage({
+      eventId,
+      title: "Kickoff operativo",
+      icon: "CalendarDays",
+      description: "Briefing, alcance, decisiones iniciales y proximos pasos de la pareja.",
+      order: 1
+    });
+    const vendorPageId = addWorkspacePage({
+      eventId,
+      title: "Proveedores clave",
+      icon: "Users",
+      description: "Shortlist, reservas, contratos y responsables por categoria.",
+      order: 2
+    });
+    const financePageId = addWorkspacePage({
+      eventId,
+      title: "Finanzas y pagos",
+      icon: "WalletCards",
+      description: "Pagos programados, avisos financieros y compromisos por proveedor.",
+      order: 3
+    });
+    const productionPageId = addWorkspacePage({
+      eventId,
+      title: "Produccion final",
+      icon: "ClipboardList",
+      description: "Invitados, seating, runbook, plan B y semana de la boda.",
+      order: 4
+    });
+
+    addWorkspaceBlock({
+      pageId: kickoffPageId,
+      eventId,
+      type: "milestone",
+      title: "Briefing de pareja validado",
+      body: `Confirmar estilo, presupuesto, prioridades y limites operativos para ${eventName || coupleName}.`,
+      owner: "Nomad",
+      dueDate: operationalDate(date, 240, 7),
+      reminderDate: operationalDate(date, 247, 3),
+      priority: "alta",
+      status: "pendiente",
+      createdAt: new Date().toISOString()
+    });
+    addWorkspaceBlock({
+      pageId: vendorPageId,
+      eventId,
+      type: "vendor",
+      title: "Shortlist de espacio y catering",
+      body: "Preparar 3 opciones por categoria, validar disponibilidad y condiciones de reserva.",
+      owner: "Nomad",
+      dueDate: operationalDate(date, 210, 14),
+      reminderDate: operationalDate(date, 217, 10),
+      priority: "alta",
+      status: "pendiente",
+      createdAt: new Date().toISOString()
+    });
+    addWorkspaceBlock({
+      pageId: vendorPageId,
+      eventId,
+      type: "vendor",
+      title: "Fotografia, musica y decoracion",
+      body: "Solicitar propuestas, revisar estilo y bloquear proveedores prioritarios.",
+      owner: "Nomad",
+      dueDate: operationalDate(date, 150, 21),
+      reminderDate: operationalDate(date, 157, 17),
+      priority: "media",
+      status: "pendiente",
+      createdAt: new Date().toISOString()
+    });
+    addWorkspaceBlock({
+      pageId: financePageId,
+      eventId,
+      type: "payment",
+      title: "Reserva inicial Nomad",
+      body: "Primer pago para activar planificacion, proveedores y agenda operativa.",
+      owner: "Pareja",
+      dueDate: operationalDate(date, 230, 10),
+      reminderDate: operationalDate(date, 237, 6),
+      priority: "alta",
+      status: "programado",
+      amount: Math.max(1200, Math.round(estimatedBudget * 0.12)),
+      createdAt: new Date().toISOString()
+    });
+    addWorkspaceBlock({
+      pageId: financePageId,
+      eventId,
+      type: "payment",
+      title: "Segundo pago de proveedores",
+      body: "Bloquear pagos de espacio, catering y proveedores confirmados.",
+      owner: "Nomad",
+      dueDate: operationalDate(date, 45, 30),
+      reminderDate: operationalDate(date, 52, 23),
+      priority: "alta",
+      status: "programado",
+      amount: Math.max(3000, Math.round(estimatedBudget * 0.35)),
+      createdAt: new Date().toISOString()
+    });
+    addWorkspaceBlock({
+      pageId: productionPageId,
+      eventId,
+      type: "task",
+      title: "Primer seating y necesidades especiales",
+      body: "Recoger alergias, movilidad, transporte y prioridades familiares antes de cerrar plano.",
+      owner: "Pareja",
+      dueDate: operationalDate(date, 60, 35),
+      reminderDate: operationalDate(date, 67, 28),
+      priority: "media",
+      status: "pendiente",
+      createdAt: new Date().toISOString()
+    });
+    addWorkspaceBlock({
+      pageId: productionPageId,
+      eventId,
+      type: "milestone",
+      title: "Runbook de dia B aprobado",
+      body: "Cerrar cronograma, responsables, telefonos, plan B y checklist de montaje.",
+      owner: "Nomad",
+      dueDate: operationalDate(date, 14, 45),
+      reminderDate: operationalDate(date, 21, 38),
+      priority: "alta",
+      status: "pendiente",
+      createdAt: new Date().toISOString()
+    });
+
+    const kickoffDate = operationalDate(date, 238, 5);
+    const visitDate = operationalDate(date, 120, 20);
+    const finalMeetingDate = operationalDate(date, 21, 40);
+    addCalendarItem({
+      eventId,
+      title: "Kickoff con pareja",
+      kind: "reunion",
+      ...calendarRange(kickoffDate, "10:00"),
+      owner: "Nomad"
+    });
+    addCalendarItem({
+      eventId,
+      title: "Visita tecnica espacio",
+      kind: "visita-tecnica",
+      ...calendarRange(visitDate, "11:00"),
+      owner: "Nomad"
+    });
+    addCalendarItem({
+      eventId,
+      title: "Reunion final de produccion",
+      kind: "deadline",
+      ...calendarRange(finalMeetingDate, "17:00"),
+      owner: "Nomad"
     });
 
     setIsFormOpen(false);
