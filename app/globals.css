@@ -208,6 +208,29 @@ button {
   line-height: 1.45;
 }
 
+.sidebar-collapse {
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: 18px;
+}
+
+.sidebar-collapse-button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--slate-grey);
+  background: transparent;
+  border: 1px solid var(--outline-variant);
+  border-radius: 999px;
+}
+
+.sidebar-collapse-button:hover {
+  color: var(--primary);
+  background: var(--pure-white);
+}
+
 .workspace {
   min-width: 0;
   padding: 24px;
@@ -276,7 +299,19 @@ select {
   background-position: right 12px center !important;
   background-size: 16px !important;
   padding-right: 36px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   cursor: pointer !important;
+}
+
+.icon-button.muted-danger {
+  color: var(--slate-grey);
+}
+
+.icon-button.muted-danger:hover {
+  color: var(--error);
+  border-color: var(--error-soft);
 }
 
 .screen-grid {
@@ -560,8 +595,42 @@ select {
   border-radius: 8px;
 }
 
+select {
+  padding-right: 34px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .finance-create-form .primary-button {
   white-space: nowrap;
+}
+
+.boda-summary-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px;
+  background: var(--surface-low);
+  border: 1px solid var(--outline-variant);
+  border-radius: 8px;
+}
+
+.boda-summary-form textarea {
+  grid-column: span 3;
+  min-height: 42px;
+  padding: 9px 10px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  resize: vertical;
+}
+
+.boda-summary-form .primary-button {
+  min-height: 42px;
 }
 
 .finance-scope-switch {
@@ -943,11 +1012,45 @@ dd {
   border-radius: inherit;
 }
 
+.notion-page-create {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface-low);
+  border: 1px solid var(--outline-variant);
+  border-radius: 8px;
+}
+
+.empty-workspace-create {
+  max-width: 560px;
+}
+
+.notion-page-create input,
+.notion-page-create button {
+  min-height: 34px;
+}
+
+.notion-page-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: stretch;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+.notion-page-row.active {
+  background: #fff;
+  border-color: var(--outline-variant);
+}
+
 .notion-page-button {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr);
   gap: 10px;
   align-items: center;
+  width: 100%;
   min-height: 58px;
   padding: 10px;
   color: var(--on-surface-variant);
@@ -1135,10 +1238,49 @@ dd {
 }
 
 .notion-page-button:hover,
-.notion-page-button.active {
+.notion-page-row.active .notion-page-button {
   color: var(--primary);
   background: var(--surface-low);
   border-color: var(--outline-variant);
+}
+
+.notion-page-actions {
+  display: grid;
+  grid-template-columns: 32px 32px;
+  gap: 4px;
+  align-content: center;
+}
+
+.notion-page-actions .icon-button {
+  width: 32px;
+  min-height: 32px;
+}
+
+.notion-page-edit {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--outline-variant);
+  border-radius: 8px;
+}
+
+.notion-page-edit textarea {
+  min-height: 58px;
+  padding: 8px 10px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  resize: vertical;
+}
+
+.notion-page-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .notion-page-button > span {
@@ -1192,22 +1334,27 @@ dd {
   line-height: 1.55;
 }
 
-.notion-hero-stats {
+.notion-page-kpis {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  padding: 12px;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.notion-page-kpis div {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
   background: var(--pure-white);
   border: 1px solid var(--outline-variant);
   border-radius: 8px;
 }
 
-.notion-hero-stats strong {
+.notion-page-kpis strong {
   color: var(--primary);
-  font-size: 24px;
+  font-size: 22px;
 }
 
-.notion-hero-stats span {
+.notion-page-kpis span {
   color: var(--slate-grey);
   font-size: 11px;
   font-weight: 800;
@@ -2548,6 +2695,15 @@ dd {
   .notion-page-hero,
   .notion-block {
     grid-template-columns: 1fr;
+  }
+
+  .notion-page-row,
+  .boda-summary-form {
+    grid-template-columns: 1fr;
+  }
+
+  .boda-summary-form textarea {
+    grid-column: auto;
   }
 
   .notion-create select,

@@ -319,8 +319,9 @@ export function NotionWorkspace({
     workspaceBlocks,
     vendors,
     addWorkspacePage,
-    updateWorkspacePage,
-    updateWorkspaceBlock,
+  updateWorkspacePage,
+  deleteWorkspacePage,
+  updateWorkspaceBlock,
     addWorkspaceBlock,
     deleteWorkspaceBlock
   } = useApp();
@@ -342,6 +343,11 @@ export function NotionWorkspace({
   const [editingId, setEditingId] = useState("");
   const [editDraft, setEditDraft] = useState<BlockDraft>(emptyDraft);
   const [focusedBlockId, setFocusedBlockId] = useState("");
+  const [newPageTitle, setNewPageTitle] = useState("");
+  const [newPageDescription, setNewPageDescription] = useState("");
+  const [editingPageId, setEditingPageId] = useState("");
+  const [pageTitleDraft, setPageTitleDraft] = useState("");
+  const [pageDescriptionDraft, setPageDescriptionDraft] = useState("");
 
   useEffect(() => {
     const pageId = focusPageId || workspaceBlocks.find((block) => block.id === focusBlockId)?.pageId || "";
@@ -445,6 +451,45 @@ export function NotionWorkspace({
     });
   };
 
+  const addPage = (submitEvent: React.FormEvent<HTMLFormElement>) => {
+    submitEvent.preventDefault();
+    const title = newPageTitle.trim();
+    if (!title || !eventId) return;
+    const pageId = addWorkspacePage({
+      eventId,
+      title,
+      icon: "ClipboardList",
+      description: newPageDescription.trim() || "Pagina personalizada de trabajo.",
+      order: pages.length + 1
+    });
+    setNewPageTitle("");
+    setNewPageDescription("");
+    setActivePageId(pageId);
+  };
+
+  const startPageEdit = (page: WorkspacePage) => {
+    setEditingPageId(page.id);
+    setPageTitleDraft(page.title);
+    setPageDescriptionDraft(page.description);
+  };
+
+  const savePageEdit = (page: WorkspacePage) => {
+    const title = pageTitleDraft.trim();
+    if (!title) return;
+    updateWorkspacePage({
+      ...page,
+      title,
+      description: pageDescriptionDraft.trim() || page.description
+    });
+    setEditingPageId("");
+  };
+
+  const removePage = (page: WorkspacePage) => {
+    blocksForEvent.filter((block) => block.pageId === page.id).forEach((block) => deleteWorkspaceBlock(block.id));
+    deleteWorkspacePage(page.id);
+    if (selectedPageId === page.id) setActivePageId("");
+  };
+
   const addBlock = (eventSubmit: React.FormEvent) => {
     eventSubmit.preventDefault();
     if (!draft.title.trim() || !selectedPageId || !eventId) return;
@@ -522,6 +567,11 @@ export function NotionWorkspace({
         <button className="primary-button" onClick={applyTemplate} style={{ justifySelf: "start" }}>
           <Plus size={16} /> Generar roadmap operativo
         </button>
+        <form className="notion-page-create empty-workspace-create" onSubmit={addPage}>
+          <input value={newPageTitle} onChange={(eventInput) => setNewPageTitle(eventInput.target.value)} placeholder="Crear pagina personalizada" aria-label="Crear pagina personalizada" />
+          <input value={newPageDescription} onChange={(eventInput) => setNewPageDescription(eventInput.target.value)} placeholder="Descripcion breve" aria-label="Descripcion de pagina personalizada" />
+          <button className="secondary-button" type="submit"><Plus size={14} /> Crear pagina</button>
+        </form>
       </section>
     );
   }
@@ -545,22 +595,44 @@ export function NotionWorkspace({
           <Plus size={15} /> Añadir plantilla operativa
         </button>
 
+        <form className="notion-page-create" onSubmit={addPage}>
+          <input value={newPageTitle} onChange={(eventInput) => setNewPageTitle(eventInput.target.value)} placeholder="Nueva pagina" aria-label="Nueva pagina" />
+          <input value={newPageDescription} onChange={(eventInput) => setNewPageDescription(eventInput.target.value)} placeholder="Descripcion breve" aria-label="Descripcion de pagina" />
+          <button className="primary-button" type="submit"><Plus size={14} /> Crear</button>
+        </form>
+
         <div style={{ display: "grid", gap: "8px" }}>
           {pages.map((page) => {
             const pageBlocks = blocksForEvent.filter((block) => block.pageId === page.id);
             const active = page.id === selectedPageId;
+            const editingPage = editingPageId === page.id;
             return (
-              <button
-                key={page.id}
-                className={active ? "notion-page-button active" : "notion-page-button"}
-                onClick={() => setActivePageId(page.id)}
-              >
-                <span>{pageIcons[page.icon] || <ClipboardList size={16} />}</span>
-                <div>
-                  <strong>{page.title}</strong>
-                  <small>{pageBlocks.length} bloques</small>
-                </div>
-              </button>
+              <div key={page.id} className={active ? "notion-page-row active" : "notion-page-row"}>
+                {editingPage ? (
+                  <div className="notion-page-edit">
+                    <input value={pageTitleDraft} onChange={(eventInput) => setPageTitleDraft(eventInput.target.value)} aria-label="Editar titulo de pagina" />
+                    <textarea value={pageDescriptionDraft} onChange={(eventInput) => setPageDescriptionDraft(eventInput.target.value)} aria-label="Editar descripcion de pagina" />
+                    <div className="notion-page-edit-actions">
+                      <button className="primary-button" type="button" onClick={() => savePageEdit(page)}><Save size={14} /> Guardar</button>
+                      <button className="secondary-button" type="button" onClick={() => setEditingPageId("")}><X size={14} /> Cancelar</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <button className="notion-page-button" onClick={() => setActivePageId(page.id)}>
+                      <span>{pageIcons[page.icon] || <ClipboardList size={16} />}</span>
+                      <div>
+                        <strong>{page.title}</strong>
+                        <small>{pageBlocks.length} bloques</small>
+                      </div>
+                    </button>
+                    <div className="notion-page-actions">
+                      <button className="icon-button" type="button" onClick={() => startPageEdit(page)} aria-label="Editar pagina"><Edit3 size={14} /></button>
+                      <button className="icon-button" type="button" onClick={() => removePage(page)} aria-label="Eliminar pagina"><Trash2 size={14} /></button>
+                    </div>
+                  </>
+                )}
+              </div>
             );
           })}
         </div>
@@ -591,11 +663,19 @@ export function NotionWorkspace({
             <h3>{selectedPage.title}</h3>
             <p>{selectedPage.description}</p>
           </div>
-          <div className="notion-hero-stats">
-            <strong>{openBlocks.length}</strong>
-            <span>pendientes</span>
-            <strong>{pendingPayments.length}</strong>
-            <span>pagos activos</span>
+          <div className="notion-page-kpis">
+            <div>
+              <strong>{blocksForPage.length}</strong>
+              <span>bloques en pagina</span>
+            </div>
+            <div>
+              <strong>{openBlocks.length}</strong>
+              <span>pendientes globales</span>
+            </div>
+            <div>
+              <strong>{pendingPayments.length}</strong>
+              <span>pagos activos</span>
+            </div>
           </div>
         </div>
 

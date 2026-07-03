@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useApp } from "@/context/AppContext";
 import { Sidebar, type TabId } from "./components/Layout/Sidebar";
 import { Header } from "./components/Layout/Header";
@@ -23,7 +23,6 @@ import {
 
 // Components
 import ProveedoresPage from "./components/Proveedores/ProveedoresPage";
-import ClientesPage from "./components/Clientes/ClientesPage";
 import BodasPage from "./components/Bodas/BodasPage";
 import BodaDetail from "./components/Bodas/BodaDetail";
 import { BudgetSimulator } from "./components/Simulador/BudgetSimulator";
@@ -57,7 +56,12 @@ export default function Home() {
   const [financeFocusPaymentId, setFinanceFocusPaymentId] = useState("");
   const [createBodaRequestId, setCreateBodaRequestId] = useState(0);
   const backupInputRef = useRef<HTMLInputElement>(null);
+  const bodaDetailRef = useRef<HTMLDivElement>(null);
   const selectedEventId = activeEventId || events[0]?.id || "";
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [activeTab]);
 
   // Determine active event
   const activeEvent = useMemo(() => {
@@ -128,7 +132,6 @@ export default function Home() {
   const tabTitle = (tab: TabId) => {
     const labels: Record<TabId, string> = {
       dashboard: "Dashboard de Operaciones",
-      leads: "Clientes y CRM",
       events: "Fichas de Bodas",
       notion: "Notion de Boda",
       agenda: "Agenda Operativa",
@@ -153,6 +156,13 @@ export default function Home() {
   const startCreateBoda = () => {
     setActiveTab("events");
     setCreateBodaRequestId((current) => current + 1);
+  };
+
+  const openBodaDetail = (eventId: string) => {
+    setActiveEventId(eventId);
+    window.setTimeout(() => {
+      bodaDetailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
   };
 
   const openNotionProject = (eventId: string) => {
@@ -205,7 +215,7 @@ export default function Home() {
   if (!initialized) {
     return (
       <main className={sidebarMinimized ? "app-shell sidebar-minimized" : "app-shell"}>
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} minimized={sidebarMinimized} setMinimized={setSidebarMinimized} onResetSeed={resetToSeed} />
+        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} minimized={sidebarMinimized} setMinimized={setSidebarMinimized} />
         <section className="workspace">
           <div className="loading-panel">
             <div className="panel-action"><Database size={18} /></div>
@@ -219,7 +229,7 @@ export default function Home() {
 
   return (
     <main className={sidebarMinimized ? "app-shell sidebar-minimized" : "app-shell"}>
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} minimized={sidebarMinimized} setMinimized={setSidebarMinimized} onResetSeed={resetToSeed} />
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} minimized={sidebarMinimized} setMinimized={setSidebarMinimized} />
 
       <section className="workspace">
         <Header
@@ -230,6 +240,7 @@ export default function Home() {
           backupStatus={backupStatus}
           onExportBackup={handleExportBackup}
           onImportBackup={() => backupInputRef.current?.click()}
+          onResetSeed={resetToSeed}
         />
         <input
           ref={backupInputRef}
@@ -256,9 +267,9 @@ export default function Home() {
 
             {/* 2. Metrics (KPIs) */}
             <Metric
-              label="Clientes / CRM"
+              label="Cuentas de boda"
               value={clients.length}
-              detail="Parejas registradas en CRM"
+              detail="Parejas dentro de proyectos"
               icon={<Users size={18} />}
             />
             <Metric
@@ -371,13 +382,11 @@ export default function Home() {
           </div>
         )}
 
-        {activeTab === "leads" && <ClientesPage onSelectEvent={setActiveEventId} setActiveTab={setActiveTab} />}
-
         {activeTab === "events" && (
           <div style={{ display: "grid", gap: "24px" }}>
-            <BodasPage onSelectEvent={setActiveEventId} activeEventId={selectedEventId} createRequestId={createBodaRequestId} />
+            <BodasPage onSelectEvent={setActiveEventId} onOpenDetail={openBodaDetail} activeEventId={selectedEventId} createRequestId={createBodaRequestId} />
             {selectedEventId && (
-              <div style={{ borderTop: "2px solid var(--outline-variant)", paddingTop: "20px" }}>
+              <div ref={bodaDetailRef} style={{ borderTop: "2px solid var(--outline-variant)", paddingTop: "20px", scrollMarginTop: "18px" }}>
                 <BodaDetail eventId={selectedEventId} />
               </div>
             )}

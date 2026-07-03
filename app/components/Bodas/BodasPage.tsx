@@ -8,6 +8,7 @@ import { createWeddingProject } from "@/lib/wedding-project";
 
 interface BodasPageProps {
   onSelectEvent: (id: string) => void;
+  onOpenDetail?: (id: string) => void;
   activeEventId: string;
   createRequestId?: number;
 }
@@ -20,7 +21,7 @@ const PHASES: Array<{ id: EventPhase; label: string; desc: string }> = [
   { id: "semana-boda", label: "Semana Boda", desc: "Montaje final y día B" }
 ];
 
-export default function BodasPage({ onSelectEvent, activeEventId, createRequestId = 0 }: BodasPageProps) {
+export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, createRequestId = 0 }: BodasPageProps) {
   const {
     events,
     updateEvent,
@@ -278,7 +279,11 @@ export default function BodasPage({ onSelectEvent, activeEventId, createRequestI
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onSelectEvent(event.id);
+                            if (onOpenDetail) {
+                              onOpenDetail(event.id);
+                            } else {
+                              onSelectEvent(event.id);
+                            }
                           }}
                           style={{
                             border: 0,

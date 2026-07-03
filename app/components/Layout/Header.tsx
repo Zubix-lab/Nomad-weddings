@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Download, Printer, Upload } from "lucide-react";
+import { Download, Printer, RefreshCw, Upload } from "lucide-react";
 import type { Event } from "@/lib/types";
 
 interface HeaderProps {
@@ -12,6 +12,7 @@ interface HeaderProps {
   backupStatus?: string;
   onExportBackup: () => void;
   onImportBackup: () => void;
+  onResetSeed: () => void;
 }
 
 export function Header({
@@ -21,7 +22,8 @@ export function Header({
   title,
   backupStatus,
   onExportBackup,
-  onImportBackup
+  onImportBackup,
+  onResetSeed
 }: HeaderProps) {
   return (
     <header className="topbar">
@@ -51,6 +53,9 @@ export function Header({
         </button>
         <button className="icon-button" type="button" title="Imprimir briefing" aria-label="Imprimir briefing" onClick={() => window.print()}>
           <Printer size={18} />
+        </button>
+        <button className="icon-button muted-danger" type="button" title="Restaurar datos demo" aria-label="Restaurar datos demo" onClick={onResetSeed}>
+          <RefreshCw size={18} />
         </button>
       </div>
     </header>

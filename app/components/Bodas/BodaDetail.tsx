@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useApp } from "@/context/AppContext";
 import {
   CalendarDays,
@@ -14,7 +14,7 @@ import {
 import { ParejaProfilePanel } from "./ParejaProfile";
 import { ReunionesPanel } from "./ReunionesPanel";
 import { ChecklistPanel } from "./ChecklistPanel";
-import type { EventService, ServiceStatus } from "@/lib/types";
+import type { EventPhase, EventService, ServiceStatus } from "@/lib/types";
 
 interface BodaDetailProps {
   eventId: string;
@@ -28,10 +28,13 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
     clients,
     vendors,
     eventServices,
+    workspaceBlocks,
     checklistItems,
     documents,
     parejaProfiles,
     reuniones,
+    updateEvent,
+    updateClient,
     addParejaProfile,
     addReunion,
     deleteReunion,
@@ -48,18 +51,51 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
   const [serviceVendorId, setServiceVendorId] = useState("");
   const [serviceCost, setServiceCost] = useState(1000);
   const [serviceStatus, setServiceStatus] = useState<ServiceStatus>("pendiente");
+  const [eventNameDraft, setEventNameDraft] = useState("");
+  const [eventDateDraft, setEventDateDraft] = useState("");
+  const [eventLocationDraft, setEventLocationDraft] = useState("");
+  const [eventRegionDraft, setEventRegionDraft] = useState("");
+  const [eventGuestsDraft, setEventGuestsDraft] = useState(0);
+  const [eventBudgetDraft, setEventBudgetDraft] = useState(0);
+  const [eventStyleDraft, setEventStyleDraft] = useState("");
+  const [eventPhaseDraft, setEventPhaseDraft] = useState<EventPhase>("descubrimiento");
+  const [eventRisksDraft, setEventRisksDraft] = useState("");
+  const [eventDietsDraft, setEventDietsDraft] = useState("");
+  const [eventAccommodationDraft, setEventAccommodationDraft] = useState("");
+  const [clientPrefsDraft, setClientPrefsDraft] = useState("");
+  const [clientNotesDraft, setClientNotesDraft] = useState("");
 
   // Get active wedding/event
   const event = events.find((e) => e.id === eventId) ?? events[0];
+  const client = event ? clients.find((c) => c.id === event.clientId) : undefined;
+
+  useEffect(() => {
+    if (!event) return;
+    setEventNameDraft(event.name);
+    setEventDateDraft(event.date);
+    setEventLocationDraft(event.location);
+    setEventRegionDraft(event.region);
+    setEventGuestsDraft(event.guests);
+    setEventBudgetDraft(event.totalBudget);
+    setEventStyleDraft(event.style);
+    setEventPhaseDraft(event.phase);
+    setEventRisksDraft(event.risks.join(", "));
+    setEventDietsDraft(event.dietaryNeeds.join(", "));
+    setEventAccommodationDraft(event.accommodationNeeds);
+    setClientPrefsDraft(client?.preferences.join(", ") || "");
+    setClientNotesDraft(client?.notes || "");
+  }, [event, client]);
+
   if (!event) {
     return <div className="empty-state">Selecciona una boda para ver los detalles.</div>;
   }
-
-  const client = clients.find((c) => c.id === event.clientId);
   
   // Tasks calculations
   const eventTasks = checklistItems.filter((t) => t.eventId === event.id);
   const openTasks = eventTasks.filter((t) => !t.completada);
+  const eventWorkspaceBlocks = workspaceBlocks.filter((block) => block.eventId === event.id);
+  const openWorkspaceBlocks = eventWorkspaceBlocks.filter((block) => ["task", "milestone", "vendor"].includes(block.type) && !["hecha", "contratado"].includes(String(block.status)));
+  const activeWorkspacePayments = eventWorkspaceBlocks.filter((block) => block.type === "payment" && block.status !== "pagado");
   
   // Services calculations
   const eventServicesList = eventServices.filter((s) => s.eventId === event.id);
@@ -81,6 +117,34 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
       status: serviceStatus
     });
     setIsServiceFormOpen(false);
+  };
+
+  const splitList = (value: string) => value.split(",").map((item) => item.trim()).filter(Boolean);
+
+  const handleSaveSummary = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateEvent({
+      ...event,
+      name: eventNameDraft.trim() || event.name,
+      date: eventDateDraft,
+      location: eventLocationDraft,
+      region: eventRegionDraft,
+      guests: Number(eventGuestsDraft) || 0,
+      totalBudget: Number(eventBudgetDraft) || 0,
+      style: eventStyleDraft,
+      phase: eventPhaseDraft,
+      risks: splitList(eventRisksDraft),
+      dietaryNeeds: splitList(eventDietsDraft),
+      accommodationNeeds: eventAccommodationDraft,
+    });
+
+    if (client) {
+      updateClient({
+        ...client,
+        preferences: splitList(clientPrefsDraft),
+        notes: clientNotesDraft,
+      });
+    }
   };
 
   const handleUpdateServiceVendor = (service: EventService, vendorId: string) => {
@@ -178,21 +242,53 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
       {/* Tab Contents */}
       {activeTab === "resumen" && (
         <div className="screen-grid">
+          <section className="panel full" style={{ gridColumn: "span 4" }}>
+            <div className="panel-header">
+              <div>
+                <p className="eyebrow">Ficha editable</p>
+                <h3>Datos de boda y cuenta cliente</h3>
+              </div>
+              <div className="panel-action"><FileText size={18} /></div>
+            </div>
+            <form className="boda-summary-form" onSubmit={handleSaveSummary}>
+              <input value={eventNameDraft} onChange={(e) => setEventNameDraft(e.target.value)} placeholder="Nombre de la boda" aria-label="Nombre de la boda" />
+              <input type="date" value={eventDateDraft} onChange={(e) => setEventDateDraft(e.target.value)} aria-label="Fecha de la boda" />
+              <input value={eventLocationDraft} onChange={(e) => setEventLocationDraft(e.target.value)} placeholder="Lugar" aria-label="Lugar" />
+              <select value={eventPhaseDraft} onChange={(e) => setEventPhaseDraft(e.target.value as EventPhase)} aria-label="Fase">
+                <option value="descubrimiento">Descubrimiento</option>
+                <option value="diseno">Diseno</option>
+                <option value="proveedores">Proveedores</option>
+                <option value="produccion">Produccion</option>
+                <option value="semana-boda">Semana boda</option>
+              </select>
+              <input value={eventRegionDraft} onChange={(e) => setEventRegionDraft(e.target.value)} placeholder="Region" aria-label="Region" />
+              <input type="number" value={eventGuestsDraft} onChange={(e) => setEventGuestsDraft(Number(e.target.value))} placeholder="Invitados" aria-label="Invitados" />
+              <input type="number" value={eventBudgetDraft} onChange={(e) => setEventBudgetDraft(Number(e.target.value))} placeholder="Presupuesto" aria-label="Presupuesto" />
+              <input value={eventStyleDraft} onChange={(e) => setEventStyleDraft(e.target.value)} placeholder="Estilo y concepto" aria-label="Estilo y concepto" />
+              <input value={clientPrefsDraft} onChange={(e) => setClientPrefsDraft(e.target.value)} placeholder="Preferencias de pareja" aria-label="Preferencias de pareja" />
+              <input value={eventDietsDraft} onChange={(e) => setEventDietsDraft(e.target.value)} placeholder="Dietas y alergias" aria-label="Dietas y alergias" />
+              <input value={eventRisksDraft} onChange={(e) => setEventRisksDraft(e.target.value)} placeholder="Riesgos y plan B" aria-label="Riesgos y plan B" />
+              <input value={eventAccommodationDraft} onChange={(e) => setEventAccommodationDraft(e.target.value)} placeholder="Alojamiento" aria-label="Alojamiento" />
+              <textarea value={clientNotesDraft} onChange={(e) => setClientNotesDraft(e.target.value)} placeholder="Notas internas de la cuenta cliente" aria-label="Notas internas de la cuenta cliente" />
+              <button className="primary-button" type="submit">Guardar ficha</button>
+            </form>
+          </section>
+
           {/* Card stats */}
           <div style={{ gridColumn: "span 2", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
             <div className="metric" style={{ background: "var(--pure-white)", border: "1px solid var(--line)" }}>
               <div className="metric-icon"><ClipboardList size={18} /></div>
-              <p>Tareas Pendientes</p>
-              <strong>{openTasks.length}</strong>
-              <span>Checklist activo de la boda</span>
+              <p>Pendientes Notion</p>
+              <strong>{openWorkspaceBlocks.length}</strong>
+              <span>{openTasks.length} checklist interno</span>
             </div>
             <div className="metric" style={{ background: "var(--pure-white)", border: "1px solid var(--line)" }}>
               <div className="metric-icon"><WalletCards size={18} /></div>
-              <p>Servicios sin Proveedor</p>
-              <strong style={{ color: missingServices.length > 0 ? "var(--secondary)" : "var(--primary)" }}>
-                {missingServices.length}
+              <p>Pagos y servicios</p>
+              <strong style={{ color: missingServices.length > 0 || activeWorkspacePayments.length > 0 ? "var(--secondary)" : "var(--primary)" }}>
+                {activeWorkspacePayments.length}
               </strong>
-              <span>Necesitan contratación</span>
+              <span>{missingServices.length} servicios sin proveedor</span>
             </div>
           </div>
 

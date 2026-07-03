@@ -3,26 +3,24 @@
 import React from "react";
 import {
   ClipboardList,
-  Users,
   CalendarDays,
   CalendarClock,
   Search,
   WalletCards,
   FileText,
+  Calculator,
   ChevronLeft,
-  ChevronRight,
-  RefreshCw
+  ChevronRight
 } from "lucide-react";
 
 export const tabs = [
   { id: "dashboard", label: "Dashboard", icon: ClipboardList },
-  { id: "leads", label: "Clientes / CRM", icon: Users },
   { id: "events", label: "Bodas", icon: CalendarDays },
   { id: "notion", label: "Notion", icon: FileText },
   { id: "agenda", label: "Agenda", icon: CalendarClock },
   { id: "vendors", label: "Proveedores", icon: Search },
   { id: "finance", label: "Finanzas", icon: WalletCards },
-  { id: "simulator", label: "Simulador", icon: WalletCards }
+  { id: "simulator", label: "Simulador", icon: Calculator }
 ] as const;
 
 export type TabId = typeof tabs[number]["id"];
@@ -32,10 +30,9 @@ interface SidebarProps {
   setActiveTab: (tab: TabId) => void;
   minimized: boolean;
   setMinimized: (minimized: boolean) => void;
-  onResetSeed?: () => void;
 }
 
-export function Sidebar({ activeTab, setActiveTab, minimized, setMinimized, onResetSeed }: SidebarProps) {
+export function Sidebar({ activeTab, setActiveTab, minimized, setMinimized }: SidebarProps) {
   return (
     <aside className={minimized ? "sidebar minimized" : "sidebar"}>
       <div className="brand-block">
@@ -64,41 +61,11 @@ export function Sidebar({ activeTab, setActiveTab, minimized, setMinimized, onRe
         })}
       </nav>
 
-      <div className="sidebar-foot" style={{ marginTop: "auto", display: "grid", gap: "10px" }}>
-        {onResetSeed && (
-          <button
-            className="secondary-button"
-            onClick={onResetSeed}
-            title="Restaurar base de datos"
-            style={{
-              padding: minimized ? "10px 0" : "8px 12px",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: "8px",
-              fontSize: "12px",
-              minHeight: "auto",
-              borderColor: "var(--outline-variant)",
-              width: "100%"
-            }}
-          >
-            <RefreshCw size={12} />
-            {!minimized && <span>Restaurar BD</span>}
-          </button>
-        )}
+      <div className="sidebar-collapse">
         <button
-          className="secondary-button"
+          className="sidebar-collapse-button"
           onClick={() => setMinimized(!minimized)}
           title={minimized ? "Expandir" : "Contraer"}
-          style={{
-            padding: "8px 0",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            width: "100%",
-            minHeight: "auto",
-            borderColor: "var(--outline-variant)"
-          }}
         >
           {minimized ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
