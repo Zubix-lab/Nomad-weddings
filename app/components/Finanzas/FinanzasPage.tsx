@@ -50,7 +50,17 @@ function reminderForDueDate(dueDate: string): string {
   return addDays(dueDate, -7);
 }
 
-export function FinanzasPage({ activeEventId, events, onOpenNotion }: { activeEventId: string; events: Event[]; onOpenNotion: (pageId?: string) => void }) {
+export function FinanzasPage({
+  activeEventId,
+  events,
+  onOpenNotion,
+  focusPaymentId = ""
+}: {
+  activeEventId: string;
+  events: Event[];
+  onOpenNotion: (pageId?: string, blockId?: string) => void;
+  focusPaymentId?: string;
+}) {
   const {
     workspaceBlocks,
     workspacePages,
@@ -239,7 +249,7 @@ export function FinanzasPage({ activeEventId, events, onOpenNotion }: { activeEv
               {workspacePayments.map((payment) => {
                 const state = paymentState(payment);
                 return (
-                  <tr key={payment.id}>
+                  <tr key={payment.id} className={focusPaymentId === payment.id ? "finance-row focused" : "finance-row"}>
                     <td>
                       <strong>{payment.title}</strong>
                       {payment.body && <p style={{ margin: "4px 0 0", color: "var(--slate-grey)", fontSize: "12px" }}>{payment.body}</p>}
@@ -251,7 +261,7 @@ export function FinanzasPage({ activeEventId, events, onOpenNotion }: { activeEv
                     <td><strong>{currency(Number(payment.amount || 0))}</strong></td>
                     <td>
                       <div className="finance-actions">
-                        <button className="mini-button" type="button" onClick={() => onOpenNotion(payment.pageId)} aria-label="Abrir pago en Notion">
+                        <button className="mini-button" type="button" onClick={() => onOpenNotion(payment.pageId, payment.id)} aria-label="Abrir pago en Notion">
                           <FileText size={14} />
                         </button>
                         <button className="mini-button" type="button" onClick={() => togglePayment(payment)} aria-label={payment.status === "pagado" ? "Reabrir pago" : "Marcar pago como pagado"}>

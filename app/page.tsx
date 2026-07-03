@@ -51,7 +51,8 @@ export default function Home() {
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
   const [activeEventId, setActiveEventId] = useState("");
   const [backupStatus, setBackupStatus] = useState("");
-  const [notionFocusPageId, setNotionFocusPageId] = useState("");
+  const [notionFocus, setNotionFocus] = useState({ pageId: "", blockId: "" });
+  const [financeFocusPaymentId, setFinanceFocusPaymentId] = useState("");
   const backupInputRef = useRef<HTMLInputElement>(null);
   const selectedEventId = activeEventId || events[0]?.id || "";
 
@@ -113,9 +114,15 @@ export default function Home() {
     return labels[tab];
   };
 
-  const openNotion = (pageId?: string) => {
-    if (pageId) setNotionFocusPageId(pageId);
+  const openNotion = (pageId?: string, blockId?: string) => {
+    setFinanceFocusPaymentId("");
+    setNotionFocus({ pageId: pageId || "", blockId: blockId || "" });
     setActiveTab("notion");
+  };
+
+  const openFinance = (paymentId?: string) => {
+    setFinanceFocusPaymentId(paymentId || "");
+    setActiveTab("finance");
   };
 
   const showBackupStatus = (message: string) => {
@@ -322,20 +329,34 @@ export default function Home() {
           </div>
         )}
 
-        {activeTab === "notion" && <NotionWorkspace activeEventId={selectedEventId} events={events} focusPageId={notionFocusPageId} />}
+        {activeTab === "notion" && (
+          <NotionWorkspace
+            activeEventId={selectedEventId}
+            events={events}
+            focusPageId={notionFocus.pageId}
+            focusBlockId={notionFocus.blockId}
+          />
+        )}
 
         {activeTab === "agenda" && (
           <AgendaPage
             activeEventId={selectedEventId}
             events={events}
-            onOpenNotion={() => openNotion()}
-            onOpenFinance={() => setActiveTab("finance")}
+            onOpenNotion={openNotion}
+            onOpenFinance={openFinance}
           />
         )}
 
         {activeTab === "vendors" && <ProveedoresPage />}
 
-        {activeTab === "finance" && <FinanzasPage activeEventId={selectedEventId} events={events} onOpenNotion={openNotion} />}
+        {activeTab === "finance" && (
+          <FinanzasPage
+            activeEventId={selectedEventId}
+            events={events}
+            onOpenNotion={openNotion}
+            focusPaymentId={financeFocusPaymentId}
+          />
+        )}
 
         {activeTab === "simulator" && <BudgetSimulator />}
       </section>

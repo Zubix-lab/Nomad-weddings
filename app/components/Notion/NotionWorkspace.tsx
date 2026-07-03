@@ -303,7 +303,17 @@ function draftFromBlock(block: WorkspaceBlock): BlockDraft {
   };
 }
 
-export function NotionWorkspace({ activeEventId, events, focusPageId = "" }: { activeEventId: string; events: Event[]; focusPageId?: string }) {
+export function NotionWorkspace({
+  activeEventId,
+  events,
+  focusPageId = "",
+  focusBlockId = ""
+}: {
+  activeEventId: string;
+  events: Event[];
+  focusPageId?: string;
+  focusBlockId?: string;
+}) {
   const {
     workspacePages,
     workspaceBlocks,
@@ -331,14 +341,17 @@ export function NotionWorkspace({ activeEventId, events, focusPageId = "" }: { a
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [editingId, setEditingId] = useState("");
   const [editDraft, setEditDraft] = useState<BlockDraft>(emptyDraft);
+  const [focusedBlockId, setFocusedBlockId] = useState("");
 
   useEffect(() => {
-    if (!focusPageId || !pages.some((page) => page.id === focusPageId)) return;
-    setActivePageId(focusPageId);
+    const pageId = focusPageId || workspaceBlocks.find((block) => block.id === focusBlockId)?.pageId || "";
+    if (!pageId || !pages.some((page) => page.id === pageId)) return;
+    setActivePageId(pageId);
+    setFocusedBlockId(focusBlockId);
     setFilterType("all");
     setQuery("");
     setViewMode("list");
-  }, [focusPageId, pages]);
+  }, [focusPageId, focusBlockId, pages, workspaceBlocks]);
 
   const blocksForEvent = useMemo(
     () => workspaceBlocks.filter((block) => block.eventId === eventId),
@@ -651,9 +664,15 @@ export function NotionWorkspace({ activeEventId, events, focusPageId = "" }: { a
             const done = isDone(block);
             const editing = editingId === block.id;
             const overdue = !done && block.dueDate && dateDistance(block.dueDate) < 0;
+            const className = [
+              "notion-block",
+              done ? "done" : "",
+              overdue ? "overdue" : "",
+              focusedBlockId === block.id ? "focused" : ""
+            ].filter(Boolean).join(" ");
 
             return (
-              <article key={block.id} className={done ? "notion-block done" : overdue ? "notion-block overdue" : "notion-block"}>
+              <article key={block.id} className={className}>
                 <button className="notion-check" onClick={() => toggleBlock(block)} aria-label="Cambiar estado">
                   {done ? <CheckCircle2 size={18} /> : <Circle size={18} />}
                 </button>

@@ -104,8 +104,8 @@ export function AgendaPage({
 }: {
   activeEventId: string;
   events: Event[];
-  onOpenNotion: () => void;
-  onOpenFinance: () => void;
+  onOpenNotion: (pageId?: string, blockId?: string) => void;
+  onOpenFinance: (paymentId?: string) => void;
 }) {
   const {
     calendarItems,
@@ -201,6 +201,20 @@ export function AgendaPage({
     updateWorkspaceBlock({ ...block, status: block.status === "hecha" ? "pendiente" : "hecha" });
   };
 
+  const openSource = (item: AgendaItem) => {
+    if (!item.block) {
+      onOpenNotion();
+      return;
+    }
+
+    if (item.block.type === "payment") {
+      onOpenFinance(item.block.id);
+      return;
+    }
+
+    onOpenNotion(item.block.pageId, item.block.id);
+  };
+
   const setNotificationState = (item: NotificationItem, status: NotificationRecord["status"]) => {
     const next: Omit<NotificationRecord, "id"> = {
       eventId,
@@ -235,8 +249,8 @@ export function AgendaPage({
             <h3>{event?.name || "Boda activa"}</h3>
           </div>
           <div className="agenda-actions">
-            <button className="secondary-button" onClick={onOpenNotion}><FileText size={15} /> Notion</button>
-            <button className="secondary-button" onClick={onOpenFinance}><CreditCard size={15} /> Finanzas</button>
+            <button className="secondary-button" onClick={() => onOpenNotion()}><FileText size={15} /> Notion</button>
+            <button className="secondary-button" onClick={() => onOpenFinance()}><CreditCard size={15} /> Finanzas</button>
           </div>
         </div>
 
@@ -277,11 +291,16 @@ export function AgendaPage({
                   {item.body && <p>{item.body}</p>}
                   <small>{formatDate(item.date)}{item.owner ? ` - ${item.owner}` : ""}</small>
                 </div>
-                {item.block && (
-                  <button className={done ? "secondary-button" : "primary-button"} onClick={() => closeBlock(item.block as WorkspaceBlock)}>
-                    <CheckCircle2 size={15} /> {done ? "Reabrir" : "Cerrar"}
+                <div className="agenda-row-actions">
+                  <button className="secondary-button" type="button" onClick={() => openSource(item)}>
+                    {item.kind === "payment" ? <CreditCard size={15} /> : <FileText size={15} />} Origen
                   </button>
-                )}
+                  {item.block && (
+                    <button className={done ? "secondary-button" : "primary-button"} onClick={() => closeBlock(item.block as WorkspaceBlock)}>
+                      <CheckCircle2 size={15} /> {done ? "Reabrir" : "Cerrar"}
+                    </button>
+                  )}
+                </div>
               </article>
             );
           })}
@@ -308,7 +327,7 @@ export function AgendaPage({
               <div className="notification-actions">
                 <button className="secondary-button" type="button" onClick={() => setNotificationState(item, "snoozed")}>Posponer</button>
                 <button className="secondary-button" type="button" onClick={() => setNotificationState(item, "dismissed")}>Descartar</button>
-                <button className="icon-button" type="button" onClick={item.kind === "payment" ? onOpenFinance : onOpenNotion} aria-label="Abrir origen">
+                <button className="icon-button" type="button" onClick={() => openSource(item)} aria-label="Abrir origen">
                   <FileText size={14} />
                 </button>
               </div>

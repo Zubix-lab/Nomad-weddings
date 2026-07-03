@@ -550,7 +550,7 @@ select {
 
 .finance-create-form {
   display: grid;
-  grid-template-columns: minmax(220px, 1.7fr) minmax(120px, 0.7fr) repeat(2, minmax(140px, 0.8fr)) minmax(120px, 0.7fr) minmax(190px, 1fr) auto;
+  grid-template-columns: minmax(200px, 1.6fr) minmax(95px, 0.6fr) repeat(2, minmax(125px, 0.75fr)) minmax(105px, 0.65fr) minmax(170px, 0.9fr) minmax(112px, 0.7fr);
   gap: 10px;
   align-items: center;
   margin: 16px 0 12px;
@@ -593,6 +593,13 @@ select {
   color: var(--primary);
 }
 
+.finance-row.focused,
+.notion-block.focused {
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+  background: #fffaf5;
+}
+
 .mini-button.danger {
   color: var(--danger);
 }
@@ -615,7 +622,8 @@ select {
 }
 
 .agenda-actions,
-.agenda-toolbar {
+.agenda-toolbar,
+.agenda-row-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -624,11 +632,16 @@ select {
 
 .agenda-actions .secondary-button,
 .agenda-row .primary-button,
-.agenda-row .secondary-button {
+.agenda-row .secondary-button,
+.agenda-row-actions .secondary-button {
   display: inline-flex;
   gap: 6px;
   align-items: center;
   justify-content: center;
+}
+
+.agenda-row-actions {
+  justify-content: flex-end;
 }
 
 .agenda-toolbar {
