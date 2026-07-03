@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Download } from "lucide-react";
+import { Download, Printer, Upload } from "lucide-react";
 import type { Event } from "@/lib/types";
 
 interface HeaderProps {
@@ -9,14 +9,26 @@ interface HeaderProps {
   setActiveEventId: (id: string) => void;
   events: Event[];
   title: string;
+  backupStatus?: string;
+  onExportBackup: () => void;
+  onImportBackup: () => void;
 }
 
-export function Header({ activeEventId, setActiveEventId, events, title }: HeaderProps) {
+export function Header({
+  activeEventId,
+  setActiveEventId,
+  events,
+  title,
+  backupStatus,
+  onExportBackup,
+  onImportBackup
+}: HeaderProps) {
   return (
     <header className="topbar">
       <div>
         <p className="eyebrow">Operación Interna</p>
         <h2>{title}</h2>
+        {backupStatus && <p className="backup-status">{backupStatus}</p>}
       </div>
       <div className="topbar-actions">
         <select
@@ -31,8 +43,14 @@ export function Header({ activeEventId, setActiveEventId, events, title }: Heade
             </option>
           ))}
         </select>
-        <button className="icon-button" title="Imprimir briefing" onClick={() => window.print()}>
+        <button className="icon-button" type="button" title="Exportar backup" aria-label="Exportar backup" onClick={onExportBackup}>
           <Download size={18} />
+        </button>
+        <button className="icon-button" type="button" title="Importar backup" aria-label="Importar backup" onClick={onImportBackup}>
+          <Upload size={18} />
+        </button>
+        <button className="icon-button" type="button" title="Imprimir briefing" aria-label="Imprimir briefing" onClick={() => window.print()}>
+          <Printer size={18} />
         </button>
       </div>
     </header>

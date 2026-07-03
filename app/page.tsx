@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { useApp } from "@/context/AppContext";
 import { Sidebar, type TabId } from "./components/Layout/Sidebar";
 import { Header } from "./components/Layout/Header";
@@ -40,6 +40,8 @@ export default function Home() {
     clients,
     initialized,
     resetToSeed,
+    exportBackup,
+    importBackup,
     addTask,
     updateTask,
     deleteTask
@@ -48,6 +50,8 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
   const [activeEventId, setActiveEventId] = useState("");
+  const [backupStatus, setBackupStatus] = useState("");
+  const backupInputRef = useRef<HTMLInputElement>(null);
   const selectedEventId = activeEventId || events[0]?.id || "";
 
   // Determine active event
@@ -108,6 +112,41 @@ export default function Home() {
     return labels[tab];
   };
 
+  const showBackupStatus = (message: string) => {
+    setBackupStatus(message);
+    window.setTimeout(() => setBackupStatus(""), 4500);
+  };
+
+  const handleExportBackup = () => {
+    const backup = exportBackup();
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `nomad-weddings-backup-${backup.exportedAt.slice(0, 10)}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    showBackupStatus("Backup exportado.");
+  };
+
+  const handleImportBackup = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const payload = JSON.parse(await file.text());
+      const result = importBackup(payload);
+      setActiveEventId("");
+      showBackupStatus(`Backup importado: ${result.importedRecords} registros.`);
+    } catch (error) {
+      showBackupStatus(error instanceof Error ? error.message : "No se pudo importar el backup.");
+    } finally {
+      event.target.value = "";
+    }
+  };
+
   if (!initialized) {
     return (
       <main className={sidebarMinimized ? "app-shell sidebar-minimized" : "app-shell"}>
@@ -133,6 +172,18 @@ export default function Home() {
           setActiveEventId={setActiveEventId}
           events={events}
           title={tabTitle(activeTab)}
+          backupStatus={backupStatus}
+          onExportBackup={handleExportBackup}
+          onImportBackup={() => backupInputRef.current?.click()}
+        />
+        <input
+          ref={backupInputRef}
+          className="visually-hidden-input"
+          type="file"
+          accept="application/json,.json"
+          onChange={handleImportBackup}
+          aria-hidden="true"
+          tabIndex={-1}
         />
 
         {activeTab === "dashboard" && (

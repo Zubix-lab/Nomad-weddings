@@ -105,6 +105,18 @@ interface AppState {
 
 type CollectionKey = keyof Omit<AppState, "initialized">;
 
+export interface BackupPayload {
+  app: "nomad-weddings";
+  version: 1;
+  exportedAt: string;
+  collections: Omit<AppState, "initialized">;
+}
+
+export interface ImportBackupResult {
+  importedCollections: number;
+  importedRecords: number;
+}
+
 type Action =
   | { type: "INIT"; state: Omit<AppState, "initialized"> }
   | { type: "ADD"; collection: CollectionKey; item: Record<string, unknown> }
@@ -134,6 +146,32 @@ const STORAGE_KEYS: Record<CollectionKey, string> = {
   workspaceBlocks: STORAGE_PREFIX + "workspaceBlocks",
   notificationRecords: STORAGE_PREFIX + "notificationRecords",
 };
+
+const COLLECTION_KEYS = Object.keys(STORAGE_KEYS) as CollectionKey[];
+
+function parseBackupPayload(payload: unknown): Omit<AppState, "initialized"> {
+  if (!payload || typeof payload !== "object") {
+    throw new Error("El archivo no es un backup valido.");
+  }
+
+  const candidate = payload as Partial<BackupPayload>;
+  if (candidate.app !== "nomad-weddings" || candidate.version !== 1 || !candidate.collections || typeof candidate.collections !== "object") {
+    throw new Error("El backup no pertenece a Nomad Weddings o usa una version no compatible.");
+  }
+
+  const collections = candidate.collections as Partial<Record<CollectionKey, unknown>>;
+  const nextState = {} as Omit<AppState, "initialized">;
+
+  COLLECTION_KEYS.forEach((collection) => {
+    const value = collections[collection];
+    if (!Array.isArray(value)) {
+      throw new Error(`El backup no incluye la coleccion ${collection}.`);
+    }
+    nextState[collection] = value as never;
+  });
+
+  return nextState;
+}
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -234,6 +272,8 @@ interface AppContextValue extends AppState {
   // Utility
   generateId: () => string;
   resetToSeed: () => void;
+  exportBackup: () => BackupPayload;
+  importBackup: (payload: unknown) => ImportBackupResult;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -375,6 +415,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     deleteNotificationRecord: (id) => remove("notificationRecords", id),
     // Utility
     generateId,
+    exportBackup: () => {
+      const collections = {} as Omit<AppState, "initialized">;
+      COLLECTION_KEYS.forEach((collection) => {
+        collections[collection] = state[collection] as never;
+      });
+      return {
+        app: "nomad-weddings",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        collections,
+      };
+    },
+    importBackup: (payload) => {
+      const importedState = parseBackupPayload(payload);
+      COLLECTION_KEYS.forEach((collection) => {
+        save(STORAGE_KEYS[collection], importedState[collection] as unknown[]);
+      });
+      dispatch({ type: "INIT", state: importedState });
+      return {
+        importedCollections: COLLECTION_KEYS.length,
+        importedRecords: COLLECTION_KEYS.reduce((total, collection) => total + importedState[collection].length, 0),
+      };
+    },
     resetToSeed: () => {
       if (typeof window !== "undefined") {
         Object.values(STORAGE_KEYS).forEach((key) => {
