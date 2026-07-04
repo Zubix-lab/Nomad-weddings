@@ -10,7 +10,9 @@ import {
   FileText,
   Calculator,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Home,
+  MoreHorizontal
 } from "lucide-react";
 
 export const tabs = [
@@ -24,16 +26,6 @@ export const tabs = [
 ] as const;
 
 export type TabId = typeof tabs[number]["id"];
-
-const mobileLabels: Record<TabId, string> = {
-  dashboard: "Inicio",
-  events: "Bodas",
-  notion: "Notion",
-  agenda: "Agenda",
-  vendors: "Provs.",
-  finance: "Fin.",
-  simulator: "Sim."
-};
 
 interface SidebarProps {
   activeTab: TabId;
@@ -84,22 +76,35 @@ export function Sidebar({ activeTab, setActiveTab, minimized, setMinimized }: Si
   );
 }
 
-export function MobileTabBar({ activeTab, setActiveTab }: Pick<SidebarProps, "activeTab" | "setActiveTab">) {
+interface MobileTabBarProps {
+  activeTab: TabId;
+  isMoreOpen: boolean;
+  setActiveTab: (tab: TabId) => void;
+  onOpenMore: () => void;
+}
+
+export function MobileTabBar({ activeTab, isMoreOpen, setActiveTab, onOpenMore }: MobileTabBarProps) {
+  const primaryItems = [
+    { id: "dashboard" as const, label: "Inicio", icon: Home, onClick: () => setActiveTab("dashboard"), active: activeTab === "dashboard" && !isMoreOpen },
+    { id: "events" as const, label: "Bodas", icon: CalendarDays, onClick: () => setActiveTab("events"), active: activeTab === "events" && !isMoreOpen },
+    { id: "more" as const, label: "Más", icon: MoreHorizontal, onClick: onOpenMore, active: isMoreOpen || !["dashboard", "events"].includes(activeTab) }
+  ];
+
   return (
     <nav className="mobile-tabbar" aria-label="Navegacion principal movil">
       <div className="mobile-tabbar-track">
-        {tabs.map((tab) => {
+        {primaryItems.map((tab) => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
               type="button"
-              className={activeTab === tab.id ? "mobile-tab-item active" : "mobile-tab-item"}
-              onClick={() => setActiveTab(tab.id)}
-              aria-current={activeTab === tab.id ? "page" : undefined}
+              className={tab.active ? "mobile-tab-item active" : "mobile-tab-item"}
+              onClick={tab.onClick}
+              aria-current={tab.active ? "page" : undefined}
             >
               <Icon size={19} />
-              <span>{mobileLabels[tab.id]}</span>
+              <span>{tab.label}</span>
             </button>
           );
         })}

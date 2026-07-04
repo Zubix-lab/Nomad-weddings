@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useApp } from "@/context/AppContext";
 import { MobileTabBar, Sidebar, tabs, type TabId } from "./components/Layout/Sidebar";
 import { Header } from "./components/Layout/Header";
-import type { Task } from "@/lib/types";
+import type { Event, Task } from "@/lib/types";
 import {
   ArrowRight,
   Users,
@@ -50,6 +50,17 @@ function urlForTab(tab: TabId): string {
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
+function urlForMobileMore(): string {
+  const url = new URL(window.location.href);
+  url.hash = "tab=more";
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function getHashTab(): string {
+  if (typeof window === "undefined") return "";
+  return new URLSearchParams(window.location.hash.replace(/^#/, "")).get("tab") || "";
+}
+
 export default function Home() {
   const {
     leads,
@@ -69,6 +80,9 @@ export default function Home() {
   } = useApp();
 
   const [activeTab, setActiveTabState] = useState<TabId>(() => getTabFromLocation() || "dashboard");
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(() => getHashTab() === "more");
+  const [mobileEventDetailOpen, setMobileEventDetailOpen] = useState(false);
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
   const [activeEventId, setActiveEventId] = useState("");
   const [backupStatus, setBackupStatus] = useState("");
@@ -82,8 +96,18 @@ export default function Home() {
   const selectedEventId = activeEventId || events[0]?.id || "";
 
   const setActiveTab = (tab: TabId) => {
+    setMobileMoreOpen(false);
+    setMobileEventDetailOpen(false);
     setActiveTabState(tab);
   };
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 760px)");
+    const updateViewport = () => setIsMobileViewport(media.matches);
+    updateViewport();
+    media.addEventListener("change", updateViewport);
+    return () => media.removeEventListener("change", updateViewport);
+  }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -94,9 +118,15 @@ export default function Home() {
     window.history.replaceState({ ...(window.history.state || {}), nomadTab: currentTab }, "", urlForTab(currentTab));
 
     const handlePopState = () => {
+      if (getHashTab() === "more") {
+        isRestoringHistoryRef.current = true;
+        setMobileMoreOpen(true);
+        return;
+      }
       const restoredTab = getTabFromLocation() || window.history.state?.nomadTab;
       if (!isTabId(restoredTab)) return;
       isRestoringHistoryRef.current = true;
+      setMobileMoreOpen(false);
       setActiveTabState(restoredTab);
     };
 
@@ -109,11 +139,24 @@ export default function Home() {
       isRestoringHistoryRef.current = false;
       return;
     }
+    if (mobileMoreOpen) return;
     if (getTabFromLocation() === activeTab && window.history.state?.nomadTab === activeTab) return;
     window.history.pushState({ ...(window.history.state || {}), nomadTab: activeTab }, "", urlForTab(activeTab));
-  }, [activeTab]);
+  }, [activeTab, mobileMoreOpen]);
+
+  const openMobileMore = () => {
+    setMobileEventDetailOpen(false);
+    setMobileMoreOpen(true);
+    if (getHashTab() !== "more") {
+      window.history.pushState({ ...(window.history.state || {}), nomadMobileMore: true }, "", urlForMobileMore());
+    }
+  };
 
   const handleMobileBack = () => {
+    if (mobileEventDetailOpen) {
+      setMobileEventDetailOpen(false);
+      return;
+    }
     if (window.history.length > 1) {
       window.history.back();
       return;
@@ -222,18 +265,46 @@ export default function Home() {
     return labels[tab];
   };
 
+  const mobileTabTitle = (tab: TabId) => {
+    const labels: Record<TabId, string> = {
+      dashboard: "Inicio",
+      events: "Bodas",
+      notion: "Notion",
+      agenda: "Agenda",
+      vendors: "Proveedores",
+      finance: "Finanzas",
+      simulator: "Simulador"
+    };
+    return labels[tab];
+  };
+
+  const shouldShowMobileBack =
+    mobileEventDetailOpen ||
+    (!mobileMoreOpen && activeTab !== "dashboard" && activeTab !== "events");
+
+  const headerTitle = mobileMoreOpen
+    ? "Más"
+    : mobileEventDetailOpen
+      ? "Ficha de boda"
+      : isMobileViewport
+        ? mobileTabTitle(activeTab)
+        : tabTitle(activeTab);
+
   const openNotion = (pageId?: string, blockId?: string) => {
+    setMobileMoreOpen(false);
     setFinanceFocusPaymentId("");
     setNotionFocus({ pageId: pageId || "", blockId: blockId || "" });
     setActiveTab("notion");
   };
 
   const openBodaProject = (eventId?: string) => {
+    setMobileMoreOpen(false);
     if (eventId) setActiveEventId(eventId);
     setActiveTab("events");
   };
 
   const startCreateBoda = () => {
+    setMobileMoreOpen(false);
     setActiveTab("events");
     setCreateBodaRequestId((current) => current + 1);
   };
@@ -246,6 +317,7 @@ export default function Home() {
   };
 
   const openNotionProject = (eventId: string) => {
+    setMobileMoreOpen(false);
     setActiveEventId(eventId);
     setFinanceFocusPaymentId("");
     setNotionFocus({ pageId: "", blockId: "" });
@@ -253,6 +325,7 @@ export default function Home() {
   };
 
   const openFinance = (paymentId?: string) => {
+    setMobileMoreOpen(false);
     setFinanceFocusPaymentId(paymentId || "");
     setActiveTab("finance");
   };
@@ -307,7 +380,7 @@ export default function Home() {
             <p>Cargando datos locales, agenda, proveedores y checklist.</p>
           </div>
         </section>
-        <MobileTabBar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <MobileTabBar activeTab={activeTab} isMoreOpen={mobileMoreOpen} setActiveTab={setActiveTab} onOpenMore={openMobileMore} />
       </main>
     );
   }
@@ -325,12 +398,12 @@ export default function Home() {
           activeEventId={selectedEventId}
           setActiveEventId={setActiveEventId}
           events={events}
-          title={tabTitle(activeTab)}
+          title={headerTitle}
           backupStatus={backupStatus}
           onExportBackup={handleExportBackup}
           onImportBackup={() => backupInputRef.current?.click()}
           onResetSeed={resetToSeed}
-          onBack={handleMobileBack}
+          onBack={shouldShowMobileBack ? handleMobileBack : undefined}
         />
         <input
           ref={backupInputRef}
@@ -342,8 +415,34 @@ export default function Home() {
           tabIndex={-1}
         />
 
-        {activeTab === "dashboard" && (
-          <div className="screen-grid">
+        {mobileMoreOpen ? (
+          <MobileMoreMenu
+            onOpenTab={setActiveTab}
+            onExportBackup={handleExportBackup}
+            onImportBackup={() => backupInputRef.current?.click()}
+            onResetSeed={resetToSeed}
+          />
+        ) : activeTab === "dashboard" && (
+          <>
+          <MobileHomeScreen
+            activeEvent={activeEvent}
+            projects={weddingProjects}
+            pendingPayments={pendingWorkspacePayments.length}
+            reminders={upcomingWorkspaceReminders.length}
+            missingServices={missingServices.length}
+            workspaceProgress={workspaceProgress}
+            onCreateBoda={startCreateBoda}
+            onOpenBodas={() => setActiveTab("events")}
+            onOpenBodaDetail={(eventId) => {
+              setActiveEventId(eventId);
+              setActiveTab("events");
+              setMobileEventDetailOpen(true);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            onOpenNotion={() => openNotionProject(selectedEventId)}
+            onOpenFinance={() => openFinance()}
+          />
+          <div className="screen-grid desktop-dashboard">
             {/* 1. Header Banner */}
             <div className="dashboard-hero">
               <div>
@@ -470,10 +569,28 @@ export default function Home() {
               <AgentDemoPanel activeEventId={activeEvent?.id || ""} leadId={leads[0]?.id || ""} />
             </div>
           </div>
+          </>
         )}
 
         {activeTab === "events" && (
-          <div style={{ display: "grid", gap: "24px" }}>
+          <>
+          <MobileWeddingsScreen
+            projects={weddingProjects}
+            activeEventId={selectedEventId}
+            onCreateBoda={startCreateBoda}
+            onOpenDetail={(eventId) => {
+              setActiveEventId(eventId);
+              setMobileEventDetailOpen(true);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            onOpenNotion={openNotionProject}
+            onOpenFinance={(eventId) => {
+              setActiveEventId(eventId);
+              openFinance();
+            }}
+            detail={mobileEventDetailOpen && selectedEventId ? <BodaDetail eventId={selectedEventId} /> : null}
+          />
+          <div className="desktop-events-flow" style={{ display: "grid", gap: "24px" }}>
             <BodasPage onSelectEvent={setActiveEventId} onOpenDetail={openBodaDetail} activeEventId={selectedEventId} createRequestId={createBodaRequestId} />
             {selectedEventId && (
               <div ref={bodaDetailRef} style={{ borderTop: "2px solid var(--outline-variant)", paddingTop: "20px", scrollMarginTop: "18px" }}>
@@ -481,6 +598,7 @@ export default function Home() {
               </div>
             )}
           </div>
+          </>
         )}
 
         {activeTab === "notion" && (
@@ -514,12 +632,253 @@ export default function Home() {
 
         {activeTab === "simulator" && <BudgetSimulator />}
       </section>
-      <MobileTabBar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <MobileTabBar activeTab={activeTab} isMoreOpen={mobileMoreOpen} setActiveTab={setActiveTab} onOpenMore={openMobileMore} />
     </main>
   );
 }
 
 // Subcomponents helper
+function MobileHomeScreen({
+  activeEvent,
+  projects,
+  pendingPayments,
+  reminders,
+  missingServices,
+  workspaceProgress,
+  onCreateBoda,
+  onOpenBodas,
+  onOpenBodaDetail,
+  onOpenNotion,
+  onOpenFinance
+}: {
+  activeEvent?: Event;
+  projects: WeddingProjectSummary[];
+  pendingPayments: number;
+  reminders: number;
+  missingServices: number;
+  workspaceProgress: number;
+  onCreateBoda: () => void;
+  onOpenBodas: () => void;
+  onOpenBodaDetail: (eventId: string) => void;
+  onOpenNotion: () => void;
+  onOpenFinance: () => void;
+}) {
+  const nextProject = projects[0];
+  const nextStep = nextProject?.nextBlock?.title || "Revisar roadmap y tareas pendientes";
+
+  return (
+    <div className="mobile-app-screen mobile-home-screen">
+      <section className="mobile-hero-card">
+        <div>
+          <span>Hoy</span>
+          <h3>{activeEvent?.name || "Nomad Weddings"}</h3>
+          <p>{nextStep}</p>
+        </div>
+        <strong>{workspaceProgress}%</strong>
+      </section>
+
+      <div className="mobile-primary-actions">
+        <button type="button" className="primary-button" onClick={onCreateBoda}>
+          <Plus size={16} /> Nueva boda
+        </button>
+        <button type="button" className="secondary-button" onClick={onOpenBodas}>
+          <CalendarDays size={16} /> Ver bodas
+        </button>
+      </div>
+
+      <section className="mobile-status-grid" aria-label="Resumen operativo">
+        <button type="button" onClick={onOpenBodas}>
+          <span>Bodas activas</span>
+          <strong>{projects.length}</strong>
+          <small>Proyectos abiertos</small>
+        </button>
+        <button type="button" onClick={onOpenFinance}>
+          <span>Pagos</span>
+          <strong>{pendingPayments}</strong>
+          <small>Pendientes</small>
+        </button>
+        <button type="button" onClick={onOpenNotion}>
+          <span>Avisos</span>
+          <strong>{reminders}</strong>
+          <small>Próximos 21 días</small>
+        </button>
+        <button type="button" onClick={onOpenBodas}>
+          <span>Sin proveedor</span>
+          <strong>{missingServices}</strong>
+          <small>Por cerrar</small>
+        </button>
+      </section>
+
+      <section className="mobile-section">
+        <div className="mobile-section-header">
+          <h3>Siguiente boda</h3>
+          <button type="button" onClick={onOpenBodas}>Ver todas</button>
+        </div>
+        {nextProject ? (
+          <MobileWeddingCard
+            project={nextProject}
+            active={true}
+            onOpenDetail={() => onOpenBodaDetail(nextProject.event.id)}
+            onOpenNotion={() => onOpenNotion()}
+            onOpenFinance={() => onOpenFinance()}
+          />
+        ) : (
+          <div className="mobile-empty-card">Crea una boda para empezar el flujo operativo.</div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function MobileWeddingsScreen({
+  projects,
+  activeEventId,
+  onCreateBoda,
+  onOpenDetail,
+  onOpenNotion,
+  onOpenFinance,
+  detail
+}: {
+  projects: WeddingProjectSummary[];
+  activeEventId: string;
+  onCreateBoda: () => void;
+  onOpenDetail: (eventId: string) => void;
+  onOpenNotion: (eventId: string) => void;
+  onOpenFinance: (eventId: string) => void;
+  detail: React.ReactNode;
+}) {
+  if (detail) {
+    return <div className="mobile-app-screen mobile-wedding-detail">{detail}</div>;
+  }
+
+  return (
+    <div className="mobile-app-screen mobile-weddings-screen">
+      <section className="mobile-module-intro">
+        <div>
+          <span>Bodas</span>
+          <h3>Proyectos activos</h3>
+          <p>Gestiona cada boda desde una ficha clara: pareja, roadmap, servicios y pagos.</p>
+        </div>
+        <button type="button" className="primary-button" onClick={onCreateBoda}>
+          <Plus size={16} /> Crear
+        </button>
+      </section>
+
+      <div className="mobile-wedding-list">
+        {projects.map((project) => (
+          <MobileWeddingCard
+            key={project.event.id}
+            project={project}
+            active={project.event.id === activeEventId}
+            onOpenDetail={() => onOpenDetail(project.event.id)}
+            onOpenNotion={() => onOpenNotion(project.event.id)}
+            onOpenFinance={() => onOpenFinance(project.event.id)}
+          />
+        ))}
+        {projects.length === 0 && (
+          <div className="mobile-empty-card">Todavía no hay bodas activas.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MobileWeddingCard({
+  project,
+  active,
+  onOpenDetail,
+  onOpenNotion,
+  onOpenFinance
+}: {
+  project: WeddingProjectSummary;
+  active: boolean;
+  onOpenDetail: () => void;
+  onOpenNotion: () => void;
+  onOpenFinance: () => void;
+}) {
+  const date = new Date(`${project.event.date}T00:00:00`).toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
+
+  return (
+    <article className={active ? "mobile-wedding-card active" : "mobile-wedding-card"}>
+      <button type="button" className="mobile-wedding-card-main" onClick={onOpenDetail}>
+        <div>
+          <span>{project.event.phase}</span>
+          <h4>{project.event.name}</h4>
+          <p>{date} · {project.event.location}</p>
+        </div>
+        <strong>{project.completion}%</strong>
+      </button>
+      <div className="mobile-progress-line">
+        <span style={{ width: `${project.completion}%` }} />
+      </div>
+      <div className="mobile-wedding-meta">
+        <span>{project.pendingCount} tareas</span>
+        <span>{project.pendingPayments} pagos</span>
+        <span>{project.profilesCount}/2 pareja</span>
+      </div>
+      <div className="mobile-card-actions">
+        <button type="button" onClick={onOpenDetail}>Ficha</button>
+        <button type="button" onClick={onOpenNotion}>Notion</button>
+        <button type="button" onClick={onOpenFinance}>Finanzas</button>
+      </div>
+    </article>
+  );
+}
+
+function MobileMoreMenu({
+  onOpenTab,
+  onExportBackup,
+  onImportBackup,
+  onResetSeed
+}: {
+  onOpenTab: (tab: TabId) => void;
+  onExportBackup: () => void;
+  onImportBackup: () => void;
+  onResetSeed: () => void;
+}) {
+  const modules: Array<{ tab: TabId; title: string; detail: string; icon: React.ReactNode }> = [
+    { tab: "notion", title: "Notion", detail: "Roadmap, tareas, notas y pagos por boda", icon: <FileText size={18} /> },
+    { tab: "agenda", title: "Agenda", detail: "Avisos, reuniones y vencimientos", icon: <CalendarDays size={18} /> },
+    { tab: "vendors", title: "Proveedores", detail: "Base de datos, contacto y notas internas", icon: <Search size={18} /> },
+    { tab: "finance", title: "Finanzas", detail: "Pagos de boda y contabilidad de empresa", icon: <WalletCards size={18} /> },
+    { tab: "simulator", title: "Simulador", detail: "Presupuesto y escenarios de experiencia", icon: <Wand2 size={18} /> }
+  ];
+
+  return (
+    <div className="mobile-app-screen mobile-more-screen">
+      <section className="mobile-module-intro">
+        <div>
+          <span>Módulos</span>
+          <h3>Más herramientas</h3>
+          <p>Todo lo secundario queda aquí para que la navegación principal respire.</p>
+        </div>
+      </section>
+
+      <div className="mobile-more-list">
+        {modules.map((module) => (
+          <button key={module.tab} type="button" className="mobile-more-row" onClick={() => onOpenTab(module.tab)}>
+            <span>{module.icon}</span>
+            <div>
+              <strong>{module.title}</strong>
+              <small>{module.detail}</small>
+            </div>
+            <ArrowRight size={16} />
+          </button>
+        ))}
+      </div>
+
+      <section className="mobile-more-data">
+        <h3>Datos y demo</h3>
+        <div>
+          <button type="button" onClick={onExportBackup}>Exportar backup</button>
+          <button type="button" onClick={onImportBackup}>Importar backup</button>
+          <button type="button" onClick={onResetSeed}>Restaurar demo</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function Metric({ label, value, detail, icon }: { label: string; value: string | number; detail: string; icon: React.ReactNode }) {
   return (
     <section className="metric">
