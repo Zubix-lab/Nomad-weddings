@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useApp } from "@/context/AppContext";
@@ -18,7 +18,14 @@ import {
   FileText,
   Heart,
   Plus,
-  Search
+  Search,
+  Bell,
+  CheckCircle2,
+  ReceiptText,
+  X,
+  Settings,
+  Grid2X2,
+  ChevronRight
 } from "lucide-react";
 
 // Components
@@ -33,7 +40,6 @@ import { AgendaPage } from "./components/Agenda/AgendaPage";
 function isTabId(value: string | null): value is TabId {
   return Boolean(value && tabs.some((tab) => tab.id === value));
 }
-
 function getTabFromLocation(): TabId | null {
   if (typeof window === "undefined") return null;
   const hash = window.location.hash.replace(/^#/, "");
@@ -59,6 +65,29 @@ function urlForMobileMore(): string {
 function getHashTab(): string {
   if (typeof window === "undefined") return "";
   return new URLSearchParams(window.location.hash.replace(/^#/, "")).get("tab") || "";
+}
+
+const mobileWeddingImages = [
+  "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=900&q=82",
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=700&q=82",
+  "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&w=700&q=82",
+  "https://images.unsplash.com/photo-1529634597503-139d3726fed5?auto=format&fit=crop&w=700&q=82",
+  "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=700&q=82"
+];
+
+const mobileDemoWeddings = [
+  { name: "Laura & Javier", date: "2026-10-10", location: "Costa vasca", guests: 96, phase: "diseno", color: "#c88b28" },
+  { name: "Sofia & Diego", date: "2026-06-14", location: "Palacio historico", guests: 180, phase: "proveedores", color: "#3868a8" },
+  { name: "Ana & Pablo", date: "2026-09-05", location: "Carpa en finca", guests: 118, phase: "descubrimiento", color: "#7b56b3" },
+  { name: "Marina & Alvaro", date: "2026-12-12", location: "Jardin privado", guests: 72, phase: "planificacion", color: "#8c8c8c" }
+];
+
+function formatMobileDate(date: string) {
+  return new Date(`${date}T00:00:00`).toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
 }
 
 export default function Home() {
@@ -147,6 +176,7 @@ export default function Home() {
   const openMobileMore = () => {
     setMobileEventDetailOpen(false);
     setMobileMoreOpen(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
     if (getHashTab() !== "more") {
       window.history.pushState({ ...(window.history.state || {}), nomadMobileMore: true }, "", urlForMobileMore());
     }
@@ -267,7 +297,7 @@ export default function Home() {
 
   const mobileTabTitle = (tab: TabId) => {
     const labels: Record<TabId, string> = {
-      dashboard: "Inicio",
+      dashboard: "Nomad",
       events: "Bodas",
       notion: "Notion",
       agenda: "Agenda",
@@ -283,12 +313,64 @@ export default function Home() {
     (!mobileMoreOpen && activeTab !== "dashboard" && activeTab !== "events");
 
   const headerTitle = mobileMoreOpen
-    ? "Más"
+    ? "M\u00e1s"
     : mobileEventDetailOpen
       ? "Ficha de boda"
       : isMobileViewport
         ? mobileTabTitle(activeTab)
         : tabTitle(activeTab);
+
+  const headerEyebrow = isMobileViewport
+    ? mobileMoreOpen
+      ? "Explora todos los m\u00f3dulos"
+      : activeTab === "dashboard"
+        ? "WEDDINGS OPS"
+        : activeTab === "events"
+          ? "Tus proyectos de boda"
+          : "Operacion Interna"
+    : "Operacion Interna";
+
+  const headerMobileAction = isMobileViewport && !mobileEventDetailOpen
+    ? mobileMoreOpen
+      ? (
+        <button type="button" className="mobile-close-button" aria-label="Cerrar m\u00e1s" onClick={() => setActiveTab("dashboard")}>
+          <X size={19} />
+        </button>
+      )
+      : activeTab === "dashboard"
+        ? (
+          <button
+            type="button"
+            className="mobile-notification-button"
+            aria-label="Avisos"
+            onClick={() => {
+              setMobileMoreOpen(false);
+              setActiveEventId(selectedEventId);
+              setFinanceFocusPaymentId("");
+              setNotionFocus({ pageId: "", blockId: "" });
+              setActiveTab("notion");
+            }}
+          >
+            <Bell size={18} />
+            <span>3</span>
+          </button>
+        )
+        : activeTab === "events"
+          ? (
+            <button
+              type="button"
+              className="mobile-create-button"
+              onClick={() => {
+                setMobileMoreOpen(false);
+                setActiveTab("events");
+                setCreateBodaRequestId((current) => current + 1);
+              }}
+            >
+              Crear boda <Plus size={16} />
+            </button>
+          )
+          : null
+    : null;
 
   const openNotion = (pageId?: string, blockId?: string) => {
     setMobileMoreOpen(false);
@@ -399,11 +481,14 @@ export default function Home() {
           setActiveEventId={setActiveEventId}
           events={events}
           title={headerTitle}
+          eyebrow={headerEyebrow}
           backupStatus={backupStatus}
           onExportBackup={handleExportBackup}
           onImportBackup={() => backupInputRef.current?.click()}
           onResetSeed={resetToSeed}
           onBack={shouldShowMobileBack ? handleMobileBack : undefined}
+          mobileAction={headerMobileAction}
+          mobileVariant={mobileMoreOpen ? "sheet" : "default"}
         />
         <input
           ref={backupInputRef}
@@ -470,13 +555,13 @@ export default function Home() {
             <Metric
               label="Proveedores verificados"
               value={vendors.length}
-              detail={`${vendors.filter(v => v.region === "Guipúzcoa").length} Gipuzkoa · ${vendors.filter(v => v.region === "Gran Canaria" || v.region === "Tenerife" || v.region === "Lanzarote").length} Canarias`}
+              detail={`${vendors.filter(v => v.region === "Gipuzkoa").length} Gipuzkoa - ${vendors.filter(v => v.region === "Gran Canaria" || v.region === "Tenerife" || v.region === "Lanzarote").length} Canarias`}
               icon={<Search size={18} />}
             />
             <Metric
-              label="Logística y presupuesto"
+              label="Logistica y presupuesto"
               value={currency(totalSpend)}
-              detail={`${pendingWorkspacePayments.length} pagos · ${upcomingWorkspaceReminders.length} avisos`}
+              detail={`${pendingWorkspacePayments.length} pagos - ${upcomingWorkspaceReminders.length} avisos`}
               icon={<WalletCards size={18} />}
             />
 
@@ -506,7 +591,7 @@ export default function Home() {
             {/* 4. Agenda & Alerts Sidebar (Spans 1 column) */}
             <div style={{ display: "grid", gap: "16px", alignContent: "start" }}>
               <section className="panel">
-                <PanelHeader title="Próximos Hitos" action={<CalendarDays size={18} />} />
+                <PanelHeader title="Proximos Hitos" action={<CalendarDays size={18} />} />
                 <div className="timeline-list" style={{ marginTop: "12px" }}>
                   {upcomingCalendar.map((item) => (
                     <div key={item.id} className="timeline-row" style={{ padding: "8px 0" }}>
@@ -518,19 +603,19 @@ export default function Home() {
                             day: "2-digit",
                             month: "short"
                           })}{" "}
-                          · {item.owner}
+                          - {item.owner}
                         </p>
                       </div>
                     </div>
                   ))}
                   {upcomingCalendar.length === 0 && (
-                    <div className="empty-state compact">Sin hitos próximos.</div>
+                    <div className="empty-state compact">Sin hitos proximos.</div>
                   )}
                 </div>
               </section>
 
               <section className="panel">
-                <PanelHeader title="Alertas de Coordinación" action={<AlertTriangle size={18} />} />
+                <PanelHeader title="Alertas de Coordinacion" action={<AlertTriangle size={18} />} />
                 <div className="alert-list" style={{ marginTop: "12px", display: "grid", gap: "8px", fontSize: "12px" }}>
                   {missingServices.slice(0, 3).map((service) => {
                     const ev = events.find((e) => e.id === service.eventId);
@@ -665,28 +750,53 @@ function MobileHomeScreen({
 }) {
   const nextProject = projects[0];
   const nextStep = nextProject?.nextBlock?.title || "Revisar roadmap y tareas pendientes";
+  const heroImage = mobileWeddingImages[0];
+  const heroDate = activeEvent ? formatMobileDate(activeEvent.date) : "24 ago 2026";
+  const heroGuests = activeEvent?.guests || 120;
 
   return (
     <div className="mobile-app-screen mobile-home-screen">
-      <section className="mobile-hero-card">
+      <section className="mobile-greeting">
+        <h3>{"Buenos d\u00edas, Alex"}</h3>
+        <p>{"Aqu\u00ed tienes el estado de hoy."}</p>
+      </section>
+
+      <section className="mobile-active-wedding">
+        <span>Boda activa</span>
+        <button type="button" className="mobile-hero-card" aria-label={`Boda activa, progreso ${workspaceProgress}%`} onClick={() => nextProject ? onOpenBodaDetail(nextProject.event.id) : onOpenBodas()}>
+        <img src={heroImage} alt="" />
+        <div className="mobile-photo-card-overlay" />
         <div>
           <span>Hoy</span>
           <h3>{activeEvent?.name || "Nomad Weddings"}</h3>
           <p>{nextStep}</p>
         </div>
-        <strong>{workspaceProgress}%</strong>
+        <strong><ChevronRight size={22} /></strong>
+        <footer>
+          <small><CalendarDays size={14} /> {heroDate}</small>
+          <small><Users size={14} /> {heroGuests} invitados</small>
+        </footer>
+        </button>
       </section>
 
-      <div className="mobile-primary-actions">
-        <button type="button" className="primary-button" onClick={onCreateBoda}>
-          <Plus size={16} /> Nueva boda
+      <section className="mobile-primary-actions" aria-label="Acciones r\u00e1pidas">
+        <h3>{"Acciones r\u00e1pidas"}</h3>
+        <button type="button" onClick={onOpenNotion}>
+          <CheckCircle2 size={22} /> Nueva tarea
         </button>
-        <button type="button" className="secondary-button" onClick={onOpenBodas}>
-          <CalendarDays size={16} /> Ver bodas
+        <button type="button" onClick={onOpenNotion}>
+          <CalendarDays size={22} /> {"Nueva reuni\u00f3n"}
         </button>
-      </div>
+        <button type="button" onClick={onOpenFinance}>
+          <ReceiptText size={22} /> Registrar gasto
+        </button>
+        <button type="button" className="accent" onClick={onCreateBoda}>
+          <Plus size={24} /> Crear boda
+        </button>
+      </section>
 
       <section className="mobile-status-grid" aria-label="Resumen operativo">
+        <h3>Resumen operativo</h3>
         <button type="button" onClick={onOpenBodas}>
           <span>Bodas activas</span>
           <strong>{projects.length}</strong>
@@ -700,7 +810,7 @@ function MobileHomeScreen({
         <button type="button" onClick={onOpenNotion}>
           <span>Avisos</span>
           <strong>{reminders}</strong>
-          <small>Próximos 21 días</small>
+          <small>{"Pr\u00f3ximos 21 d\u00edas"}</small>
         </button>
         <button type="button" onClick={onOpenBodas}>
           <span>Sin proveedor</span>
@@ -751,8 +861,35 @@ function MobileWeddingsScreen({
     return <div className="mobile-app-screen mobile-wedding-detail">{detail}</div>;
   }
 
+  const mobileItems = [
+    ...projects.map((project, index) => ({
+      id: project.event.id,
+      name: project.event.name,
+      date: project.event.date,
+      phase: project.event.phase,
+      image: mobileWeddingImages[index % mobileWeddingImages.length],
+      color: "#167047",
+      project
+    })),
+    ...mobileDemoWeddings.map((item, index) => ({
+      id: `demo-${index}`,
+      name: item.name,
+      date: item.date,
+      phase: item.phase,
+      image: mobileWeddingImages[(index + 1) % mobileWeddingImages.length],
+      color: item.color,
+      project: null
+    }))
+  ].slice(0, 5);
+
   return (
     <div className="mobile-app-screen mobile-weddings-screen">
+      <div className="mobile-filter-pills" aria-label="Filtro de bodas">
+        <button type="button" className="active">Todas</button>
+        <button type="button">En curso</button>
+        <button type="button">{"Pr\u00f3ximas"}</button>
+        <button type="button">Completadas</button>
+      </div>
       <section className="mobile-module-intro">
         <div>
           <span>Bodas</span>
@@ -765,18 +902,23 @@ function MobileWeddingsScreen({
       </section>
 
       <div className="mobile-wedding-list">
-        {projects.map((project) => (
+        {mobileItems.map((item) => (
           <MobileWeddingCard
-            key={project.event.id}
-            project={project}
-            active={project.event.id === activeEventId}
-            onOpenDetail={() => onOpenDetail(project.event.id)}
-            onOpenNotion={() => onOpenNotion(project.event.id)}
-            onOpenFinance={() => onOpenFinance(project.event.id)}
+            key={item.id}
+            project={item.project || projects[0]}
+            image={item.image}
+            displayName={item.name}
+            displayDate={item.date}
+            displayPhase={item.phase}
+            statusColor={item.color}
+            active={item.id === activeEventId}
+            onOpenDetail={() => item.project && onOpenDetail(item.project.event.id)}
+            onOpenNotion={() => item.project && onOpenNotion(item.project.event.id)}
+            onOpenFinance={() => item.project && onOpenFinance(item.project.event.id)}
           />
         ))}
         {projects.length === 0 && (
-          <div className="mobile-empty-card">Todavía no hay bodas activas.</div>
+          <div className="mobile-empty-card">Todavia no hay bodas activas.</div>
         )}
       </div>
     </div>
@@ -785,36 +927,51 @@ function MobileWeddingsScreen({
 
 function MobileWeddingCard({
   project,
+  image,
+  displayName,
+  displayDate,
+  displayPhase,
+  statusColor = "#167047",
   active,
   onOpenDetail,
   onOpenNotion,
   onOpenFinance
 }: {
-  project: WeddingProjectSummary;
+  project?: WeddingProjectSummary;
+  image?: string;
+  displayName?: string;
+  displayDate?: string;
+  displayPhase?: string;
+  statusColor?: string;
   active: boolean;
   onOpenDetail: () => void;
   onOpenNotion: () => void;
   onOpenFinance: () => void;
 }) {
-  const date = new Date(`${project.event.date}T00:00:00`).toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
+  const date = formatMobileDate(displayDate || project?.event.date || "2026-08-24");
+  const name = displayName || project?.event.name || "Boda";
+  const phase = displayPhase || project?.event.phase || "planificacion";
+  const location = project?.event.location || "Proyecto de boda";
 
   return (
     <article className={active ? "mobile-wedding-card active" : "mobile-wedding-card"}>
+      {image && <img src={image} alt="" />}
       <button type="button" className="mobile-wedding-card-main" onClick={onOpenDetail}>
         <div>
-          <span>{project.event.phase}</span>
-          <h4>{project.event.name}</h4>
-          <p>{date} · {project.event.location}</p>
+          <span>{phase}</span>
+          <h4>{name}</h4>
+          <p>{date} · {location}</p>
+          <small><i style={{ background: statusColor }} /> {phase}</small>
         </div>
-        <strong>{project.completion}%</strong>
+        <strong><ChevronRight size={20} /></strong>
       </button>
       <div className="mobile-progress-line">
-        <span style={{ width: `${project.completion}%` }} />
+        <span style={{ width: `${project?.completion || 68}%` }} />
       </div>
       <div className="mobile-wedding-meta">
-        <span>{project.pendingCount} tareas</span>
-        <span>{project.pendingPayments} pagos</span>
-        <span>{project.profilesCount}/2 pareja</span>
+        <span>{project?.pendingCount || 4} tareas</span>
+        <span>{project?.pendingPayments || 2} pagos</span>
+        <span>{project?.profilesCount || 2}/2 pareja</span>
       </div>
       <div className="mobile-card-actions">
         <button type="button" onClick={onOpenDetail}>Ficha</button>
@@ -836,28 +993,29 @@ function MobileMoreMenu({
   onImportBackup: () => void;
   onResetSeed: () => void;
 }) {
-  const modules: Array<{ tab: TabId; title: string; detail: string; icon: React.ReactNode }> = [
-    { tab: "notion", title: "Notion", detail: "Roadmap, tareas, notas y pagos por boda", icon: <FileText size={18} /> },
-    { tab: "agenda", title: "Agenda", detail: "Avisos, reuniones y vencimientos", icon: <CalendarDays size={18} /> },
-    { tab: "vendors", title: "Proveedores", detail: "Base de datos, contacto y notas internas", icon: <Search size={18} /> },
-    { tab: "finance", title: "Finanzas", detail: "Pagos de boda y contabilidad de empresa", icon: <WalletCards size={18} /> },
-    { tab: "simulator", title: "Simulador", detail: "Presupuesto y escenarios de experiencia", icon: <Wand2 size={18} /> }
+  const modules: Array<{ tab: TabId | "data"; title: string; detail: string; icon: React.ReactNode; tone: string }> = [
+    { tab: "notion", title: "Notion Workspace", detail: "Tareas, notas y documentos", icon: <FileText size={22} />, tone: "mint" },
+    { tab: "agenda", title: "Agenda", detail: "Reuniones y eventos", icon: <CalendarDays size={22} />, tone: "peach" },
+    { tab: "vendors", title: "Proveedores", detail: "Catálogo y contactos", icon: <Users size={22} />, tone: "lavender" },
+    { tab: "finance", title: "Finanzas", detail: "Pagos, presupuestos y gastos", icon: <WalletCards size={22} />, tone: "aqua" },
+    { tab: "simulator", title: "Simulador", detail: "Calcula y planifica escenarios", icon: <Grid2X2 size={22} />, tone: "sand" },
+    { tab: "data", title: "Ajustes y datos", detail: "Preferencias y gestión", icon: <Settings size={22} />, tone: "aqua" }
   ];
 
   return (
     <div className="mobile-app-screen mobile-more-screen">
       <section className="mobile-module-intro">
         <div>
-          <span>Módulos</span>
-          <h3>Más herramientas</h3>
-          <p>Todo lo secundario queda aquí para que la navegación principal respire.</p>
+          <span>Modulos</span>
+          <h3>Mas herramientas</h3>
+          <p>Todo lo secundario queda aqui para que la navegacion principal respire.</p>
         </div>
       </section>
 
       <div className="mobile-more-list">
         {modules.map((module) => (
-          <button key={module.tab} type="button" className="mobile-more-row" onClick={() => onOpenTab(module.tab)}>
-            <span>{module.icon}</span>
+          <button key={module.tab} type="button" className="mobile-more-row" onClick={() => module.tab === "data" ? onExportBackup() : onOpenTab(module.tab)}>
+            <span className={module.tone}>{module.icon}</span>
             <div>
               <strong>{module.title}</strong>
               <small>{module.detail}</small>
@@ -926,7 +1084,7 @@ function AgentDemoPanel({ activeEventId, leadId }: { activeEventId: string; lead
         title,
         endpoint,
         data: {
-          error: error instanceof Error ? error.message : "No se pudo ejecutar la acción"
+          error: error instanceof Error ? error.message : "No se pudo ejecutar la accion"
         }
       });
     } finally {
@@ -939,7 +1097,7 @@ function AgentDemoPanel({ activeEventId, leadId }: { activeEventId: string; lead
       <div className="panel-header">
         <div>
           <p className="eyebrow">Demo operativa</p>
-          <h3>Ops Agent con aprobación humana</h3>
+          <h3>Ops Agent con aprobacion humana</h3>
         </div>
         <div className="panel-action"><Bot size={18} /></div>
       </div>
@@ -958,7 +1116,7 @@ function AgentDemoPanel({ activeEventId, leadId }: { activeEventId: string; lead
             disabled={!activeEventId || Boolean(loadingAction)}
             onClick={() => runAction("Matching proveedores", "/api/agent/vendor-match", postJson({ eventId: activeEventId, category: "decoracion" }))}
           >
-            <Wand2 size={16} /> Matching decoración
+            <Wand2 size={16} /> Matching decoracion
           </button>
           <button
             className="secondary-button"
@@ -970,7 +1128,7 @@ function AgentDemoPanel({ activeEventId, leadId }: { activeEventId: string; lead
           <button
             className="secondary-button"
             disabled={!activeEventId || Boolean(loadingAction)}
-            onClick={() => runAction("Runbook día B", "/api/agent/runbook", postJson({ eventId: activeEventId }))}
+            onClick={() => runAction("Runbook dia B", "/api/agent/runbook", postJson({ eventId: activeEventId }))}
           >
             <Wand2 size={16} /> Runbook
           </button>
@@ -996,7 +1154,7 @@ function AgentDemoPanel({ activeEventId, leadId }: { activeEventId: string; lead
             </>
           ) : (
             <div className="empty-state compact">
-              Ejecuta una acción para ver el contrato real del endpoint.
+              Ejecuta una accion para ver el contrato real del endpoint.
             </div>
           )}
         </div>
@@ -1068,7 +1226,7 @@ function WeddingProjectsPanel({
               <div>
                 <span className="pill">{project.event.phase}</span>
                 <h4>{project.event.name}</h4>
-                <p>{formatDate(project.event.date)} · {project.event.location} · {project.event.guests} invitados</p>
+                <p>{formatDate(project.event.date)} - {project.event.location} - {project.event.guests} invitados</p>
               </div>
               <strong>{project.completion}%</strong>
             </button>
@@ -1174,10 +1332,10 @@ function GlobalTaskManager({ tasks, addTask, updateTask, deleteTask }: GlobalTas
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
           style={{ width: "130px", minHeight: "36px", padding: "6px 10px", fontSize: "13px" }}
-          aria-label="Fecha límite"
+          aria-label="Fecha limite"
         />
         <button type="submit" className="primary-button" style={{ minHeight: "36px", padding: "6px 16px", fontSize: "13px" }}>
-          Añadir
+          Anadir
         </button>
       </form>
 
@@ -1240,13 +1398,13 @@ function GlobalTaskManager({ tasks, addTask, updateTask, deleteTask }: GlobalTas
                 }}
                 title="Eliminar"
               >
-                ✕
+                âœ•
               </button>
             </div>
           </div>
         ))}
         {globalTasks.length === 0 && (
-          <div className="empty-state">No hay tareas corporativas. ¡Añade una arriba para empezar!</div>
+          <div className="empty-state">No hay tareas corporativas. Anade una arriba para empezar!</div>
         )}
       </div>
     </div>

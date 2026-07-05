@@ -9,11 +9,14 @@ interface HeaderProps {
   setActiveEventId: (id: string) => void;
   events: Event[];
   title: string;
+  eyebrow?: string;
   backupStatus?: string;
   onExportBackup: () => void;
   onImportBackup: () => void;
   onResetSeed: () => void;
   onBack?: () => void;
+  mobileAction?: React.ReactNode;
+  mobileVariant?: "default" | "sheet";
 }
 
 export function Header({
@@ -21,14 +24,17 @@ export function Header({
   setActiveEventId,
   events,
   title,
+  eyebrow = "Operación Interna",
   backupStatus,
   onExportBackup,
   onImportBackup,
   onResetSeed,
-  onBack
+  onBack,
+  mobileAction,
+  mobileVariant = "default"
 }: HeaderProps) {
   return (
-    <header className="topbar">
+    <header className={mobileVariant === "sheet" ? "topbar mobile-sheet-topbar" : "topbar"}>
       <div className="topbar-title">
         {onBack && (
           <button className="mobile-back-button" type="button" onClick={onBack} aria-label="Volver">
@@ -36,16 +42,17 @@ export function Header({
           </button>
         )}
         <div>
-        <p className="eyebrow">Operación Interna</p>
-        <h2>{title}</h2>
-        {backupStatus && <p className="backup-status">{backupStatus}</p>}
+          <p className="eyebrow">{eyebrow}</p>
+          <h2>{title}</h2>
+          {backupStatus && <p className="backup-status">{backupStatus}</p>}
         </div>
       </div>
+      {mobileAction && <div className="mobile-topbar-action">{mobileAction}</div>}
       <div className="topbar-actions">
         <select
           className="event-select"
           value={activeEventId}
-          onChange={(e) => setActiveEventId(e.target.value)}
+          onChange={(event) => setActiveEventId(event.target.value)}
           aria-label="Evento activo"
         >
           {events.map((event) => (
