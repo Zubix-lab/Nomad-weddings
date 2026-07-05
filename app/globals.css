@@ -2677,6 +2677,28 @@ nextjs-portal,
   border-radius: 8px;
 }
 
+.data-source-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  color: var(--slate-grey);
+  background: var(--surface-low);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.data-source-banner strong {
+  color: var(--primary);
+}
+
+.data-source-banner.connected {
+  background: color-mix(in srgb, var(--primary) 8%, var(--pure-white));
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--line));
+}
+
 .vendor-search-row,
 .vendor-filter-row {
   display: flex;

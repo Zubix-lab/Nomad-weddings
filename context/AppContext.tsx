@@ -1,117 +1,58 @@
 "use client";
 
-import { createContext, useContext, useReducer, useEffect, useCallback, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, type ReactNode } from "react";
 import type {
-  Lead, Client, Event, Vendor, VendorPrice, EventService,
-  Task, CalendarItem, DocumentRecord, Communication,
-  ParejaProfile, Reunion, ChecklistItemRecord, EmailRecord,
-  WorkspacePage, WorkspaceBlock, NotificationRecord, CompanyFinanceRecord
+  CalendarItem,
+  ChecklistItemRecord,
+  Client,
+  Communication,
+  CompanyFinanceRecord,
+  DocumentRecord,
+  EmailRecord,
+  Event,
+  EventService,
+  Lead,
+  NotificationRecord,
+  ParejaProfile,
+  Reunion,
+  Task,
+  Vendor,
+  VendorPrice,
+  WorkspaceBlock,
+  WorkspacePage
 } from "@/lib/types";
+import { getFirebaseClients } from "@/lib/firebase";
 import {
-  leads as seedLeads,
-  clients as seedClients,
-  events as seedEvents,
-  vendors as seedVendors,
-  vendorPrices as seedVendorPrices,
-  eventServices as seedEventServices,
-  tasks as seedTasks,
-  calendarItems as seedCalendarItems,
-  documents as seedDocuments,
-  communications as seedCommunications,
-  parejaProfiles as seedParejaProfiles,
-  reuniones as seedReuniones,
-  checklistItems as seedChecklistItems,
-  emailRecords as seedEmailRecords,
-  workspacePages as seedWorkspacePages,
-  workspaceBlocks as seedWorkspaceBlocks,
-  notificationRecords as seedNotificationRecords,
-  companyFinanceRecords as seedCompanyFinanceRecords
-} from "@/lib/seed";
+  clearFirestoreCollections,
+  EMPTY_COLLECTIONS,
+  FIRESTORE_COLLECTIONS,
+  importCollectionsToFirestore,
+  subscribeToFirestoreCollections,
+  upsertFirestoreRecord,
+  deleteFirestoreRecord,
+  uploadVendorImage,
+  type AppCollectionKey,
+  type AppCollections
+} from "@/lib/firestore-store";
 
-// --------------- helpers ---------------
-function generateId(): string {
-  return "item-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
-}
+type PersistenceMode = "firestore" | "local";
+type PersistenceStatus = "connecting" | "ready" | "error";
 
-function load<T>(key: string, fallback: T[]): T[] {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function save<T>(key: string, data: T[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch { /* quota exceeded — silently fail */ }
-}
-
-function mergeSeedRecords<T extends { id: string }>(key: string, stored: T[], seed: T[]): T[] {
-  const storedIds = new Set(stored.map((item) => item.id));
-  const missingSeed = seed.filter((item) => !storedIds.has(item.id));
-  if (missingSeed.length === 0) return stored;
-  const next = [...stored, ...missingSeed];
-  save(key, next);
-  return next;
-}
-
-function mergeSeedVendorImages(storedVendors: Vendor[]): Vendor[] {
-  const seedById = new Map(seedVendors.map((vendor) => [vendor.id, vendor]));
-  let changed = false;
-
-  const next = storedVendors.map((vendor) => {
-    const seedVendor = seedById.get(vendor.id);
-    if (!seedVendor?.images?.length) return vendor;
-
-    const currentImages = vendor.images || [];
-    const mergedImages = [...seedVendor.images, ...currentImages].filter((url, index, all) => all.indexOf(url) === index);
-    const sameImages = mergedImages.length === currentImages.length && mergedImages.every((url, index) => url === currentImages[index]);
-
-    if (sameImages) return vendor;
-    changed = true;
-    return { ...vendor, images: mergedImages };
-  });
-
-  if (changed) save(STORAGE_KEYS.vendors, next);
-  return next;
-}
-
-// --------------- state ---------------
-interface AppState {
-  leads: Lead[];
-  clients: Client[];
-  events: Event[];
-  vendors: Vendor[];
-  vendorPrices: VendorPrice[];
-  eventServices: EventService[];
-  tasks: Task[];
-  calendarItems: CalendarItem[];
-  documents: DocumentRecord[];
-  communications: Communication[];
-  parejaProfiles: ParejaProfile[];
-  reuniones: Reunion[];
-  checklistItems: ChecklistItemRecord[];
-  emailRecords: EmailRecord[];
-  workspacePages: WorkspacePage[];
-  workspaceBlocks: WorkspaceBlock[];
-  notificationRecords: NotificationRecord[];
-  companyFinanceRecords: CompanyFinanceRecord[];
+interface AppState extends AppCollections {
   initialized: boolean;
+  persistenceMode: PersistenceMode;
+  persistenceStatus: PersistenceStatus;
+  persistenceError: string;
 }
 
-type CollectionKey = keyof Omit<AppState, "initialized">;
+type CollectionKey = AppCollectionKey;
+type IdentifiableRecord = Record<string, unknown> & { id: string };
 
 export interface BackupPayload {
   app: "nomad-weddings";
   version: 1;
   exportedAt: string;
-  collections: Omit<AppState, "initialized">;
+  collections: AppCollections;
 }
 
 export interface ImportBackupResult {
@@ -120,39 +61,74 @@ export interface ImportBackupResult {
 }
 
 type Action =
-  | { type: "INIT"; state: Omit<AppState, "initialized"> }
-  | { type: "ADD"; collection: CollectionKey; item: Record<string, unknown> }
-  | { type: "UPDATE"; collection: CollectionKey; item: Record<string, unknown> }
-  | { type: "DELETE"; collection: CollectionKey; id: string };
+  | { type: "INIT"; state: AppCollections; mode: PersistenceMode; status: PersistenceStatus; error?: string }
+  | { type: "SYNC_COLLECTION"; collection: CollectionKey; records: IdentifiableRecord[] }
+  | { type: "ADD"; collection: CollectionKey; item: IdentifiableRecord }
+  | { type: "UPDATE"; collection: CollectionKey; item: IdentifiableRecord }
+  | { type: "DELETE"; collection: CollectionKey; id: string }
+  | { type: "SET_STATUS"; status: PersistenceStatus; error?: string }
+  | { type: "REPLACE_ALL"; state: AppCollections }
+  | { type: "CLEAR_ALL" };
 
-type IdentifiableRecord = Record<string, unknown> & { id: string };
+const STORAGE_PREFIX = "nomad_official_";
+const STORAGE_KEYS: Record<CollectionKey, string> = FIRESTORE_COLLECTIONS.reduce((acc, key) => {
+  acc[key] = `${STORAGE_PREFIX}${key}`;
+  return acc;
+}, {} as Record<CollectionKey, string>);
 
-const STORAGE_PREFIX = "nomad_";
-
-const STORAGE_KEYS: Record<CollectionKey, string> = {
-  leads: STORAGE_PREFIX + "leads",
-  clients: STORAGE_PREFIX + "clients",
-  events: STORAGE_PREFIX + "events",
-  vendors: STORAGE_PREFIX + "vendors",
-  vendorPrices: STORAGE_PREFIX + "vendorPrices",
-  eventServices: STORAGE_PREFIX + "eventServices",
-  tasks: STORAGE_PREFIX + "tasks",
-  calendarItems: STORAGE_PREFIX + "calendarItems",
-  documents: STORAGE_PREFIX + "documents",
-  communications: STORAGE_PREFIX + "communications",
-  parejaProfiles: STORAGE_PREFIX + "parejaProfiles",
-  reuniones: STORAGE_PREFIX + "reuniones",
-  checklistItems: STORAGE_PREFIX + "checklistItems",
-  emailRecords: STORAGE_PREFIX + "emailRecords",
-  workspacePages: STORAGE_PREFIX + "workspacePages",
-  workspaceBlocks: STORAGE_PREFIX + "workspaceBlocks",
-  notificationRecords: STORAGE_PREFIX + "notificationRecords",
-  companyFinanceRecords: STORAGE_PREFIX + "companyFinanceRecords",
+const EMPTY_STATE: AppState = {
+  ...EMPTY_COLLECTIONS,
+  initialized: false,
+  persistenceMode: "local",
+  persistenceStatus: "connecting",
+  persistenceError: ""
 };
 
-const COLLECTION_KEYS = Object.keys(STORAGE_KEYS) as CollectionKey[];
+function generateId(): string {
+  return "item-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+}
 
-function parseBackupPayload(payload: unknown): Omit<AppState, "initialized"> {
+function loadLocalCollection<K extends CollectionKey>(key: K): AppCollections[K] {
+  if (typeof window === "undefined") return [] as AppCollections[K];
+
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS[key]);
+    if (!raw) return [] as AppCollections[K];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : ([] as AppCollections[K]);
+  } catch {
+    return [] as AppCollections[K];
+  }
+}
+
+function loadLocalCollections(): AppCollections {
+  return FIRESTORE_COLLECTIONS.reduce((acc, key) => {
+    acc[key] = loadLocalCollection(key) as never;
+    return acc;
+  }, { ...EMPTY_COLLECTIONS });
+}
+
+function saveLocalCollection(collectionKey: CollectionKey, data: unknown[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEYS[collectionKey], JSON.stringify(data));
+  } catch {
+    // Local persistence is a fallback; Firestore remains the source of truth when configured.
+  }
+}
+
+function saveLocalCollections(collections: AppCollections): void {
+  FIRESTORE_COLLECTIONS.forEach((collectionKey) => {
+    saveLocalCollection(collectionKey, collections[collectionKey] as unknown[]);
+  });
+}
+
+function clearLocalCollections(): void {
+  if (typeof window === "undefined") return;
+  FIRESTORE_COLLECTIONS.forEach((collectionKey) => localStorage.removeItem(STORAGE_KEYS[collectionKey]));
+}
+
+function parseBackupPayload(payload: unknown): AppCollections {
   if (!payload || typeof payload !== "object") {
     throw new Error("El archivo no es un backup valido.");
   }
@@ -163,124 +139,120 @@ function parseBackupPayload(payload: unknown): Omit<AppState, "initialized"> {
   }
 
   const collections = candidate.collections as Partial<Record<CollectionKey, unknown>>;
-  const nextState = {} as Omit<AppState, "initialized">;
-
-  COLLECTION_KEYS.forEach((collection) => {
-    const value = collections[collection];
-    if (!Array.isArray(value)) {
-      if (collection === "companyFinanceRecords") {
-        nextState[collection] = seedCompanyFinanceRecords as never;
-        return;
-      }
-      throw new Error(`El backup no incluye la coleccion ${collection}.`);
-    }
-    nextState[collection] = value as never;
-  });
-
-  return nextState;
+  return FIRESTORE_COLLECTIONS.reduce((acc, collectionKey) => {
+    const value = collections[collectionKey];
+    acc[collectionKey] = (Array.isArray(value) ? value : []) as never;
+    return acc;
+  }, { ...EMPTY_COLLECTIONS });
 }
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "INIT":
-      return { ...action.state, initialized: true };
+      return {
+        ...state,
+        ...action.state,
+        initialized: true,
+        persistenceMode: action.mode,
+        persistenceStatus: action.status,
+        persistenceError: action.error || ""
+      };
+
+    case "SYNC_COLLECTION":
+      saveLocalCollection(action.collection, action.records);
+      return {
+        ...state,
+        [action.collection]: action.records,
+        initialized: true,
+        persistenceStatus: "ready",
+        persistenceError: ""
+      };
 
     case "ADD": {
       const current = state[action.collection] as unknown as IdentifiableRecord[];
-      const incomingId = (action.item as { id?: string }).id;
-      const existingIndex = incomingId ? current.findIndex((item) => item.id === incomingId) : -1;
-      const next =
-        existingIndex >= 0
-          ? current.map((item, index) => (index === existingIndex ? action.item : item))
-          : [...current, action.item];
-      save(STORAGE_KEYS[action.collection], next);
+      const index = current.findIndex((item) => item.id === action.item.id);
+      const next = index >= 0 ? current.map((item) => (item.id === action.item.id ? action.item : item)) : [...current, action.item];
+      saveLocalCollection(action.collection, next);
       return { ...state, [action.collection]: next };
     }
 
     case "UPDATE": {
       const current = state[action.collection] as unknown as IdentifiableRecord[];
-      const next = current.map((i) => (i.id === (action.item as { id: string }).id ? action.item : i));
-      save(STORAGE_KEYS[action.collection], next);
+      const next = current.map((item) => (item.id === action.item.id ? action.item : item));
+      saveLocalCollection(action.collection, next);
       return { ...state, [action.collection]: next };
     }
 
     case "DELETE": {
       const current = state[action.collection] as unknown as IdentifiableRecord[];
-      const next = current.filter((i) => i.id !== action.id);
-      save(STORAGE_KEYS[action.collection], next);
+      const next = current.filter((item) => item.id !== action.id);
+      saveLocalCollection(action.collection, next);
       return { ...state, [action.collection]: next };
     }
+
+    case "SET_STATUS":
+      return { ...state, persistenceStatus: action.status, persistenceError: action.error || "" };
+
+    case "REPLACE_ALL":
+      saveLocalCollections(action.state);
+      return { ...state, ...action.state, initialized: true, persistenceStatus: "ready", persistenceError: "" };
+
+    case "CLEAR_ALL":
+      clearLocalCollections();
+      return { ...state, ...EMPTY_COLLECTIONS, initialized: true, persistenceStatus: "ready", persistenceError: "" };
 
     default:
       return state;
   }
 }
 
-// --------------- context value ---------------
 interface AppContextValue extends AppState {
-  // Vendors
   addVendor: (v: Omit<Vendor, "id"> & { id?: string }) => string;
   updateVendor: (v: Vendor) => void;
   deleteVendor: (id: string) => void;
-  // VendorPrices
+  uploadVendorImages: (vendorId: string, files: File[]) => Promise<string[]>;
   addVendorPrice: (p: Omit<VendorPrice, "id"> & { id?: string }) => string;
   updateVendorPrice: (p: VendorPrice) => void;
-  // Leads
   addLead: (l: Omit<Lead, "id"> & { id?: string }) => string;
   updateLead: (l: Lead) => void;
   deleteLead: (id: string) => void;
-  // Clients
   addClient: (c: Omit<Client, "id"> & { id?: string }) => string;
   updateClient: (c: Client) => void;
   deleteClient: (id: string) => void;
-  // Events
   addEvent: (e: Omit<Event, "id"> & { id?: string }) => string;
   updateEvent: (e: Event) => void;
   deleteEvent: (id: string) => void;
-  // EventServices
   addEventService: (s: Omit<EventService, "id"> & { id?: string }) => string;
   updateEventService: (s: EventService) => void;
   deleteEventService: (id: string) => void;
-  // Tasks
   addTask: (t: Omit<Task, "id"> & { id?: string }) => string;
   updateTask: (t: Task) => void;
   deleteTask: (id: string) => void;
-  // CalendarItems
   addCalendarItem: (c: Omit<CalendarItem, "id"> & { id?: string }) => string;
-  // Documents
   addDocument: (d: Omit<DocumentRecord, "id"> & { id?: string }) => string;
-  // Communications
   addCommunication: (c: Omit<Communication, "id"> & { id?: string }) => string;
-  // ParejaProfiles
   addParejaProfile: (p: Omit<ParejaProfile, "id"> & { id?: string }) => string;
   updateParejaProfile: (p: ParejaProfile) => void;
   deleteParejaProfile: (id: string) => void;
-  // Reuniones
   addReunion: (r: Omit<Reunion, "id"> & { id?: string }) => string;
   updateReunion: (r: Reunion) => void;
   deleteReunion: (id: string) => void;
-  // ChecklistItems
   addChecklistItem: (i: Omit<ChecklistItemRecord, "id"> & { id?: string }) => string;
   updateChecklistItem: (i: ChecklistItemRecord) => void;
   deleteChecklistItem: (id: string) => void;
-  // EmailRecords
   addEmailRecord: (e: Omit<EmailRecord, "id"> & { id?: string }) => string;
-  // Workspace
   addWorkspacePage: (p: Omit<WorkspacePage, "id"> & { id?: string }) => string;
   updateWorkspacePage: (p: WorkspacePage) => void;
   deleteWorkspacePage: (id: string) => void;
   addWorkspaceBlock: (b: Omit<WorkspaceBlock, "id"> & { id?: string }) => string;
   updateWorkspaceBlock: (b: WorkspaceBlock) => void;
   deleteWorkspaceBlock: (id: string) => void;
-  // Notifications
   addNotificationRecord: (n: Omit<NotificationRecord, "id"> & { id?: string }) => string;
   updateNotificationRecord: (n: NotificationRecord) => void;
   deleteNotificationRecord: (id: string) => void;
-  // Company finance
   addCompanyFinanceRecord: (r: Omit<CompanyFinanceRecord, "id"> & { id?: string }) => string;
   updateCompanyFinanceRecord: (r: CompanyFinanceRecord) => void;
   deleteCompanyFinanceRecord: (id: string) => void;
-  // Utility
   generateId: () => string;
   resetToSeed: () => void;
   exportBackup: () => BackupPayload;
@@ -289,178 +261,162 @@ interface AppContextValue extends AppState {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-const EMPTY_STATE: AppState = {
-  leads: [],
-  clients: [],
-  events: [],
-  vendors: [],
-  vendorPrices: [],
-  eventServices: [],
-  tasks: [],
-  calendarItems: [],
-  documents: [],
-  communications: [],
-  parejaProfiles: [],
-  reuniones: [],
-  checklistItems: [],
-  emailRecords: [],
-  workspacePages: [],
-  workspaceBlocks: [],
-  notificationRecords: [],
-  companyFinanceRecords: [],
-  initialized: false,
-};
-
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, EMPTY_STATE);
+  const firebaseClients = useMemo(() => getFirebaseClients(), []);
 
-  // Initialize from localStorage or seed data
   useEffect(() => {
-    dispatch({
-      type: "INIT",
-      state: {
-        leads: load<Lead>(STORAGE_KEYS.leads, seedLeads),
-        clients: load<Client>(STORAGE_KEYS.clients, seedClients),
-        events: load<Event>(STORAGE_KEYS.events, seedEvents),
-        vendors: mergeSeedVendorImages(load<Vendor>(STORAGE_KEYS.vendors, seedVendors)),
-        vendorPrices: load<VendorPrice>(STORAGE_KEYS.vendorPrices, seedVendorPrices),
-        eventServices: load<EventService>(STORAGE_KEYS.eventServices, seedEventServices),
-        tasks: load<Task>(STORAGE_KEYS.tasks, seedTasks),
-        calendarItems: load<CalendarItem>(STORAGE_KEYS.calendarItems, seedCalendarItems),
-        documents: load<DocumentRecord>(STORAGE_KEYS.documents, seedDocuments),
-        communications: load<Communication>(STORAGE_KEYS.communications, seedCommunications),
-        parejaProfiles: load<ParejaProfile>(STORAGE_KEYS.parejaProfiles, seedParejaProfiles),
-        reuniones: load<Reunion>(STORAGE_KEYS.reuniones, seedReuniones),
-        checklistItems: load<ChecklistItemRecord>(STORAGE_KEYS.checklistItems, seedChecklistItems),
-        emailRecords: load<EmailRecord>(STORAGE_KEYS.emailRecords, seedEmailRecords),
-        workspacePages: mergeSeedRecords(STORAGE_KEYS.workspacePages, load<WorkspacePage>(STORAGE_KEYS.workspacePages, seedWorkspacePages), seedWorkspacePages),
-        workspaceBlocks: mergeSeedRecords(STORAGE_KEYS.workspaceBlocks, load<WorkspaceBlock>(STORAGE_KEYS.workspaceBlocks, seedWorkspaceBlocks), seedWorkspaceBlocks),
-        notificationRecords: load<NotificationRecord>(STORAGE_KEYS.notificationRecords, seedNotificationRecords),
-        companyFinanceRecords: mergeSeedRecords(STORAGE_KEYS.companyFinanceRecords, load<CompanyFinanceRecord>(STORAGE_KEYS.companyFinanceRecords, seedCompanyFinanceRecords), seedCompanyFinanceRecords),
-      },
-    });
-  }, []);
+    if (!firebaseClients) {
+      dispatch({ type: "INIT", state: loadLocalCollections(), mode: "local", status: "ready" });
+      return;
+    }
 
-  // Generic CRUD factory
+    dispatch({ type: "INIT", state: EMPTY_COLLECTIONS, mode: "firestore", status: "connecting" });
+    return subscribeToFirestoreCollections(
+      firebaseClients.db,
+      (collectionKey, records) => {
+        dispatch({ type: "SYNC_COLLECTION", collection: collectionKey, records: records as unknown as IdentifiableRecord[] });
+      },
+      (error) => {
+        dispatch({ type: "SET_STATUS", status: "error", error: error.message });
+      }
+    );
+  }, [firebaseClients]);
+
+  const persist = useCallback(
+    (collection: CollectionKey, item: IdentifiableRecord) => {
+      if (!firebaseClients) return;
+      upsertFirestoreRecord(firebaseClients.db, collection, item).catch((error) => {
+        dispatch({ type: "SET_STATUS", status: "error", error: error.message });
+      });
+    },
+    [firebaseClients]
+  );
+
+  const deleteRemote = useCallback(
+    (collection: CollectionKey, id: string) => {
+      if (!firebaseClients) return;
+      deleteFirestoreRecord(firebaseClients.db, collection, id).catch((error) => {
+        dispatch({ type: "SET_STATUS", status: "error", error: error.message });
+      });
+    },
+    [firebaseClients]
+  );
+
   const add = useCallback(
     <T extends { id?: string }>(collection: CollectionKey, item: T): string => {
       const id = item.id || generateId();
-      const withId = { ...item, id } as unknown as Record<string, unknown>;
+      const withId = { ...item, id } as unknown as IdentifiableRecord;
       dispatch({ type: "ADD", collection, item: withId });
+      persist(collection, withId);
       return id;
     },
-    []
+    [persist]
   );
 
   const update = useCallback(
-    (collection: CollectionKey, item: Record<string, unknown>) => {
+    (collection: CollectionKey, item: IdentifiableRecord) => {
       dispatch({ type: "UPDATE", collection, item });
+      persist(collection, item);
     },
-    []
+    [persist]
   );
 
   const remove = useCallback(
     (collection: CollectionKey, id: string) => {
       dispatch({ type: "DELETE", collection, id });
+      deleteRemote(collection, id);
     },
-    []
+    [deleteRemote]
   );
 
   const value: AppContextValue = {
     ...state,
-    // Vendors
     addVendor: (v) => add("vendors", v),
-    updateVendor: (v) => update("vendors", v as unknown as Record<string, unknown>),
+    updateVendor: (v) => update("vendors", v as unknown as IdentifiableRecord),
     deleteVendor: (id) => remove("vendors", id),
-    // VendorPrices
+    uploadVendorImages: async (vendorId, files) => {
+      if (!firebaseClients) {
+        throw new Error("Firebase Storage no esta configurado. Anade las variables NEXT_PUBLIC_FIREBASE_*.");
+      }
+      const urls = await Promise.all(files.map((file) => uploadVendorImage(firebaseClients.storage, vendorId, file)));
+      const vendor = state.vendors.find((item) => item.id === vendorId);
+      if (vendor) {
+        update("vendors", { ...vendor, images: [...(vendor.images || []), ...urls] } as unknown as IdentifiableRecord);
+      }
+      return urls;
+    },
     addVendorPrice: (p) => add("vendorPrices", p),
-    updateVendorPrice: (p) => update("vendorPrices", p as unknown as Record<string, unknown>),
-    // Leads
+    updateVendorPrice: (p) => update("vendorPrices", p as unknown as IdentifiableRecord),
     addLead: (l) => add("leads", l),
-    updateLead: (l) => update("leads", l as unknown as Record<string, unknown>),
+    updateLead: (l) => update("leads", l as unknown as IdentifiableRecord),
     deleteLead: (id) => remove("leads", id),
-    // Clients
     addClient: (c) => add("clients", c),
-    updateClient: (c) => update("clients", c as unknown as Record<string, unknown>),
+    updateClient: (c) => update("clients", c as unknown as IdentifiableRecord),
     deleteClient: (id) => remove("clients", id),
-    // Events
     addEvent: (e) => add("events", e),
-    updateEvent: (e) => update("events", e as unknown as Record<string, unknown>),
+    updateEvent: (e) => update("events", e as unknown as IdentifiableRecord),
     deleteEvent: (id) => remove("events", id),
-    // EventServices
     addEventService: (s) => add("eventServices", s),
-    updateEventService: (s) => update("eventServices", s as unknown as Record<string, unknown>),
+    updateEventService: (s) => update("eventServices", s as unknown as IdentifiableRecord),
     deleteEventService: (id) => remove("eventServices", id),
-    // Tasks
     addTask: (t) => add("tasks", t),
-    updateTask: (t) => update("tasks", t as unknown as Record<string, unknown>),
+    updateTask: (t) => update("tasks", t as unknown as IdentifiableRecord),
     deleteTask: (id) => remove("tasks", id),
-    // Calendar
     addCalendarItem: (c) => add("calendarItems", c),
-    // Documents
     addDocument: (d) => add("documents", d),
-    // Communications
     addCommunication: (c) => add("communications", c),
-    // ParejaProfiles
     addParejaProfile: (p) => add("parejaProfiles", p),
-    updateParejaProfile: (p) => update("parejaProfiles", p as unknown as Record<string, unknown>),
+    updateParejaProfile: (p) => update("parejaProfiles", p as unknown as IdentifiableRecord),
     deleteParejaProfile: (id) => remove("parejaProfiles", id),
-    // Reuniones
     addReunion: (r) => add("reuniones", r),
-    updateReunion: (r) => update("reuniones", r as unknown as Record<string, unknown>),
+    updateReunion: (r) => update("reuniones", r as unknown as IdentifiableRecord),
     deleteReunion: (id) => remove("reuniones", id),
-    // ChecklistItems
     addChecklistItem: (i) => add("checklistItems", i),
-    updateChecklistItem: (i) => update("checklistItems", i as unknown as Record<string, unknown>),
+    updateChecklistItem: (i) => update("checklistItems", i as unknown as IdentifiableRecord),
     deleteChecklistItem: (id) => remove("checklistItems", id),
-    // EmailRecords
     addEmailRecord: (e) => add("emailRecords", e),
-    // Workspace
     addWorkspacePage: (p) => add("workspacePages", p),
-    updateWorkspacePage: (p) => update("workspacePages", p as unknown as Record<string, unknown>),
+    updateWorkspacePage: (p) => update("workspacePages", p as unknown as IdentifiableRecord),
     deleteWorkspacePage: (id) => remove("workspacePages", id),
     addWorkspaceBlock: (b) => add("workspaceBlocks", b),
-    updateWorkspaceBlock: (b) => update("workspaceBlocks", b as unknown as Record<string, unknown>),
+    updateWorkspaceBlock: (b) => update("workspaceBlocks", b as unknown as IdentifiableRecord),
     deleteWorkspaceBlock: (id) => remove("workspaceBlocks", id),
-    // Notifications
     addNotificationRecord: (n) => add("notificationRecords", n),
-    updateNotificationRecord: (n) => update("notificationRecords", n as unknown as Record<string, unknown>),
+    updateNotificationRecord: (n) => update("notificationRecords", n as unknown as IdentifiableRecord),
     deleteNotificationRecord: (id) => remove("notificationRecords", id),
-    // Company finance
     addCompanyFinanceRecord: (r) => add("companyFinanceRecords", r),
-    updateCompanyFinanceRecord: (r) => update("companyFinanceRecords", r as unknown as Record<string, unknown>),
+    updateCompanyFinanceRecord: (r) => update("companyFinanceRecords", r as unknown as IdentifiableRecord),
     deleteCompanyFinanceRecord: (id) => remove("companyFinanceRecords", id),
-    // Utility
     generateId,
-    exportBackup: () => {
-      const collections = {} as Omit<AppState, "initialized">;
-      COLLECTION_KEYS.forEach((collection) => {
-        collections[collection] = state[collection] as never;
-      });
-      return {
-        app: "nomad-weddings",
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        collections,
-      };
-    },
+    exportBackup: () => ({
+      app: "nomad-weddings",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      collections: FIRESTORE_COLLECTIONS.reduce((acc, collection) => {
+        acc[collection] = state[collection] as never;
+        return acc;
+      }, { ...EMPTY_COLLECTIONS })
+    }),
     importBackup: (payload) => {
       const importedState = parseBackupPayload(payload);
-      COLLECTION_KEYS.forEach((collection) => {
-        save(STORAGE_KEYS[collection], importedState[collection] as unknown[]);
-      });
-      dispatch({ type: "INIT", state: importedState });
+      dispatch({ type: "REPLACE_ALL", state: importedState });
+      if (firebaseClients) {
+        importCollectionsToFirestore(firebaseClients.db, importedState).catch((error) => {
+          dispatch({ type: "SET_STATUS", status: "error", error: error.message });
+        });
+      }
       return {
-        importedCollections: COLLECTION_KEYS.length,
-        importedRecords: COLLECTION_KEYS.reduce((total, collection) => total + importedState[collection].length, 0),
+        importedCollections: FIRESTORE_COLLECTIONS.length,
+        importedRecords: FIRESTORE_COLLECTIONS.reduce((total, collection) => total + importedState[collection].length, 0)
       };
     },
     resetToSeed: () => {
-      if (typeof window !== "undefined") {
-        Object.values(STORAGE_KEYS).forEach((key) => {
-          localStorage.removeItem(key);
+      dispatch({ type: "CLEAR_ALL" });
+      if (firebaseClients) {
+        clearFirestoreCollections(firebaseClients.db).catch((error) => {
+          dispatch({ type: "SET_STATUS", status: "error", error: error.message });
         });
-        window.location.reload();
       }
     }
   };

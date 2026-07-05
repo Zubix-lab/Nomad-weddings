@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { matchVendors } from "@/lib/agent";
+import { getOfficialVendorMatches } from "@/lib/official-agent";
 
 export async function POST(request: Request) {
   const payload = (await request.json()) as { eventId?: string; category?: string };
@@ -8,5 +8,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "eventId y category son obligatorios" }, { status: 400 });
   }
 
-  return NextResponse.json({ matches: matchVendors(payload.eventId, payload.category) });
+  const matches = await getOfficialVendorMatches(payload.eventId, payload.category);
+  if (!matches) {
+    return NextResponse.json({ error: "Boda no encontrada en Firestore" }, { status: 404 });
+  }
+
+  return NextResponse.json({ matches });
 }

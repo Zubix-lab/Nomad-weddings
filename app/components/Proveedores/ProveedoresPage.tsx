@@ -62,7 +62,7 @@ function VendorCardImage({ vendor, imageUrl, priority }: { vendor: Vendor; image
 }
 
 export default function ProveedoresPage() {
-  const { vendors, vendorPrices, addVendor, updateVendor, deleteVendor } = useApp();
+  const { vendors, vendorPrices, addVendor, updateVendor, deleteVendor, uploadVendorImages, persistenceMode, persistenceStatus, persistenceError } = useApp();
 
   const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
   const [searchTerm, setSearchTerm] = useState("");
@@ -80,6 +80,7 @@ export default function ProveedoresPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editVendor, setEditVendor] = useState<Vendor | undefined>(undefined);
+  const [uploadStatus, setUploadStatus] = useState("");
 
   const provinceOptions = useMemo(
     () => Array.from(new Set(vendors.map(getVendorProvince))).sort((a, b) => a.localeCompare(b, "es")),
@@ -199,11 +200,18 @@ export default function ProveedoresPage() {
     return { lat: 43.1853, lng: -2.0928 };
   }, [selectedRegion]);
 
-  const handleSaveVendor = (vendorData: Omit<Vendor, "id"> & { id?: string }) => {
+  const handleSaveVendor = (vendorData: Omit<Vendor, "id"> & { id?: string }, imageFiles: File[]) => {
+    const vendorId = vendorData.id || addVendor(vendorData);
     if (vendorData.id) {
       updateVendor(vendorData as Vendor);
-    } else {
-      addVendor(vendorData);
+    }
+
+    if (imageFiles.length > 0) {
+      setUploadStatus("Subiendo imagenes a Firebase Storage...");
+      uploadVendorImages(vendorId, imageFiles)
+        .then((urls) => setUploadStatus(`${urls.length} imagenes subidas y vinculadas al proveedor.`))
+        .catch((error) => setUploadStatus(error instanceof Error ? error.message : "No se pudieron subir las imagenes."))
+        .finally(() => window.setTimeout(() => setUploadStatus(""), 5000));
     }
   };
 
@@ -244,6 +252,20 @@ export default function ProveedoresPage() {
       </section>
 
       <div className="vendor-filter-panel">
+        <div className={persistenceMode === "firestore" ? "data-source-banner connected" : "data-source-banner"}>
+          <strong>{persistenceMode === "firestore" ? "Firestore conectado" : "Modo local sin Firebase"}</strong>
+          <span>
+            {persistenceMode === "firestore"
+              ? persistenceStatus === "ready"
+                ? "Datos sincronizados en tiempo real."
+                : persistenceStatus === "connecting"
+                  ? "Conectando con Firestore..."
+                  : persistenceError || "Firestore ha devuelto un error."
+              : "Configura NEXT_PUBLIC_FIREBASE_* para usar la base oficial."}
+          </span>
+        </div>
+        {uploadStatus && <div className="data-source-banner connected"><strong>Imagenes</strong><span>{uploadStatus}</span></div>}
+
         <div className="vendor-search-row">
           <div className="vendor-search-box">
             <input

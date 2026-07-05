@@ -70,7 +70,7 @@ export function Header({
         <button className="icon-button" type="button" title="Imprimir briefing" aria-label="Imprimir briefing" onClick={() => window.print()}>
           <Printer size={18} />
         </button>
-        <button className="icon-button muted-danger" type="button" title="Restaurar datos demo" aria-label="Restaurar datos demo" onClick={onResetSeed}>
+        <button className="icon-button muted-danger" type="button" title="Vaciar base de datos" aria-label="Vaciar base de datos" onClick={onResetSeed}>
           <RefreshCw size={18} />
         </button>
       </div>

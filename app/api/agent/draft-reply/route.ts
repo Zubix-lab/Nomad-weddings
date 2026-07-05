@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { draftReplyForLead } from "@/lib/agent";
+import { getOfficialLeadReply } from "@/lib/official-agent";
 
 export async function POST(request: Request) {
   const payload = (await request.json()) as { leadId?: string };
@@ -8,5 +8,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "leadId es obligatorio" }, { status: 400 });
   }
 
-  return NextResponse.json(draftReplyForLead(payload.leadId));
+  const reply = await getOfficialLeadReply(payload.leadId);
+  if (!reply) {
+    return NextResponse.json({ error: "Lead no encontrado en Firestore" }, { status: 404 });
+  }
+
+  return NextResponse.json(reply);
 }

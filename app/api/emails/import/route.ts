@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { communications } from "@/lib/seed";
+import { writeApiDocument } from "@/lib/api-firestore";
 import type { Communication } from "@/lib/types";
 
 export async function POST(request: Request) {
@@ -21,7 +21,8 @@ export async function POST(request: Request) {
     createdAt: new Date().toISOString().slice(0, 10)
   };
 
-  communications.unshift(communication);
+  await writeApiDocument("communications", communication);
+
   return NextResponse.json({ communication }, { status: 201 });
 }
 

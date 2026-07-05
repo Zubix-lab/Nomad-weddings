@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { budgetDraft } from "@/lib/agent";
+import { getOfficialBudgetDraft } from "@/lib/official-agent";
 
 export async function POST(request: Request) {
   const payload = (await request.json()) as { eventId?: string };
@@ -8,5 +8,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "eventId es obligatorio" }, { status: 400 });
   }
 
-  return NextResponse.json(budgetDraft(payload.eventId));
+  const draft = await getOfficialBudgetDraft(payload.eventId);
+  if (!draft) {
+    return NextResponse.json({ error: "Boda no encontrada en Firestore" }, { status: 404 });
+  }
+
+  return NextResponse.json(draft);
 }

@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { scoreLead } from "@/lib/agent";
-import { leads } from "@/lib/seed";
+import { scoreLead } from "@/lib/lead-scoring";
+import { readApiCollection, writeApiDocument } from "@/lib/api-firestore";
 import type { Lead } from "@/lib/types";
 
 export async function GET() {
+  const leads = await readApiCollection<Lead>("leads");
   return NextResponse.json({ leads });
 }
 
@@ -43,6 +44,6 @@ export async function POST(request: Request) {
     consent: Boolean(payload.consent)
   };
 
-  leads.unshift(lead);
+  await writeApiDocument("leads", lead);
   return NextResponse.json({ lead, scoring }, { status: 201 });
 }

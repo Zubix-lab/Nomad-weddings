@@ -75,13 +75,6 @@ const mobileWeddingImages = [
   "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=700&q=82"
 ];
 
-const mobileDemoWeddings = [
-  { name: "Laura & Javier", date: "2026-10-10", location: "Costa vasca", guests: 96, phase: "diseno", color: "#c88b28" },
-  { name: "Sofia & Diego", date: "2026-06-14", location: "Palacio historico", guests: 180, phase: "proveedores", color: "#3868a8" },
-  { name: "Ana & Pablo", date: "2026-09-05", location: "Carpa en finca", guests: 118, phase: "descubrimiento", color: "#7b56b3" },
-  { name: "Marina & Alvaro", date: "2026-12-12", location: "Jardin privado", guests: 72, phase: "planificacion", color: "#8c8c8c" }
-];
-
 function formatMobileDate(date: string) {
   return new Date(`${date}T00:00:00`).toLocaleDateString("es-ES", {
     day: "2-digit",
@@ -108,9 +101,9 @@ export default function Home() {
     importBackup
   } = useApp();
 
-  const [activeTab, setActiveTabState] = useState<TabId>(() => getTabFromLocation() || "dashboard");
+  const [activeTab, setActiveTabState] = useState<TabId>("dashboard");
   const [isMobileViewport, setIsMobileViewport] = useState(false);
-  const [mobileMoreOpen, setMobileMoreOpen] = useState(() => getHashTab() === "more");
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [mobileEventDetailOpen, setMobileEventDetailOpen] = useState(false);
   const [sidebarMinimized, setSidebarMinimized] = useState(false);
   const [activeEventId, setActiveEventId] = useState("");
@@ -145,6 +138,11 @@ export default function Home() {
   useEffect(() => {
     const currentTab = getTabFromLocation() || "dashboard";
     window.history.replaceState({ ...(window.history.state || {}), nomadTab: currentTab }, "", urlForTab(currentTab));
+    if (getHashTab() === "more") {
+      setMobileMoreOpen(true);
+    } else {
+      setActiveTabState(currentTab);
+    }
 
     const handlePopState = () => {
       if (getHashTab() === "more") {
@@ -458,8 +456,8 @@ export default function Home() {
         <section className="workspace">
           <div className="loading-panel">
             <div className="panel-action"><Database size={18} /></div>
-            <h2>Preparando demo operativa</h2>
-            <p>Cargando datos locales, agenda, proveedores y checklist.</p>
+            <h2>Preparando base operativa</h2>
+            <p>Cargando Firestore, agenda, proveedores y checklist.</p>
           </div>
         </section>
         <MobileTabBar activeTab={activeTab} isMoreOpen={mobileMoreOpen} setActiveTab={setActiveTab} onOpenMore={openMobileMore} />
@@ -751,8 +749,9 @@ function MobileHomeScreen({
   const nextProject = projects[0];
   const nextStep = nextProject?.nextBlock?.title || "Revisar roadmap y tareas pendientes";
   const heroImage = mobileWeddingImages[0];
-  const heroDate = activeEvent ? formatMobileDate(activeEvent.date) : "24 ago 2026";
-  const heroGuests = activeEvent?.guests || 120;
+  const hasActiveEvent = Boolean(activeEvent && nextProject);
+  const heroDate = activeEvent ? formatMobileDate(activeEvent.date) : "";
+  const heroGuests = activeEvent?.guests || 0;
 
   return (
     <div className="mobile-app-screen mobile-home-screen">
@@ -761,23 +760,29 @@ function MobileHomeScreen({
         <p>{"Aqu\u00ed tienes el estado de hoy."}</p>
       </section>
 
-      <section className="mobile-active-wedding">
-        <span>Boda activa</span>
-        <button type="button" className="mobile-hero-card" aria-label={`Boda activa, progreso ${workspaceProgress}%`} onClick={() => nextProject ? onOpenBodaDetail(nextProject.event.id) : onOpenBodas()}>
-        <img src={heroImage} alt="" />
-        <div className="mobile-photo-card-overlay" />
-        <div>
-          <span>Hoy</span>
-          <h3>{activeEvent?.name || "Nomad Weddings"}</h3>
-          <p>{nextStep}</p>
-        </div>
-        <strong><ChevronRight size={22} /></strong>
-        <footer>
-          <small><CalendarDays size={14} /> {heroDate}</small>
-          <small><Users size={14} /> {heroGuests} invitados</small>
-        </footer>
-        </button>
-      </section>
+      {hasActiveEvent ? (
+        <section className="mobile-active-wedding">
+          <span>Boda activa</span>
+          <button type="button" className="mobile-hero-card" aria-label={`Boda activa, progreso ${workspaceProgress}%`} onClick={() => onOpenBodaDetail(nextProject.event.id)}>
+          <img src={heroImage} alt="" />
+          <div className="mobile-photo-card-overlay" />
+          <div>
+            <span>Hoy</span>
+            <h3>{activeEvent?.name || "Boda"}</h3>
+            <p>{nextStep}</p>
+          </div>
+          <strong><ChevronRight size={22} /></strong>
+          <footer>
+            <small><CalendarDays size={14} /> {heroDate}</small>
+            <small><Users size={14} /> {heroGuests} invitados</small>
+          </footer>
+          </button>
+        </section>
+      ) : (
+        <section className="mobile-empty-card">
+          Todavia no hay bodas activas. Crea la primera boda para empezar a trabajar con datos reales.
+        </section>
+      )}
 
       <section className="mobile-primary-actions" aria-label="Acciones r\u00e1pidas">
         <h3>{"Acciones r\u00e1pidas"}</h3>
@@ -870,17 +875,8 @@ function MobileWeddingsScreen({
       image: mobileWeddingImages[index % mobileWeddingImages.length],
       color: "#167047",
       project
-    })),
-    ...mobileDemoWeddings.map((item, index) => ({
-      id: `demo-${index}`,
-      name: item.name,
-      date: item.date,
-      phase: item.phase,
-      image: mobileWeddingImages[(index + 1) % mobileWeddingImages.length],
-      color: item.color,
-      project: null
     }))
-  ].slice(0, 5);
+  ];
 
   return (
     <div className="mobile-app-screen mobile-weddings-screen">
@@ -918,7 +914,7 @@ function MobileWeddingsScreen({
           />
         ))}
         {projects.length === 0 && (
-          <div className="mobile-empty-card">Todavia no hay bodas activas.</div>
+          <div className="mobile-empty-card">Todavia no hay bodas activas. Pulsa Crear boda para registrar la primera.</div>
         )}
       </div>
     </div>
@@ -1026,11 +1022,11 @@ function MobileMoreMenu({
       </div>
 
       <section className="mobile-more-data">
-        <h3>Datos y demo</h3>
+        <h3>Datos</h3>
         <div>
           <button type="button" onClick={onExportBackup}>Exportar backup</button>
           <button type="button" onClick={onImportBackup}>Importar backup</button>
-          <button type="button" onClick={onResetSeed}>Restaurar demo</button>
+          <button type="button" onClick={onResetSeed}>Vaciar base de datos</button>
         </div>
       </section>
     </div>
@@ -1096,7 +1092,7 @@ function AgentDemoPanel({ activeEventId, leadId }: { activeEventId: string; lead
     <section className="panel full agent-demo">
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Demo operativa</p>
+          <p className="eyebrow">Automatizaciones</p>
           <h3>Ops Agent con aprobacion humana</h3>
         </div>
         <div className="panel-action"><Bot size={18} /></div>
@@ -1398,7 +1394,7 @@ function GlobalTaskManager({ tasks, addTask, updateTask, deleteTask }: GlobalTas
                 }}
                 title="Eliminar"
               >
-                âœ•
+                x
               </button>
             </div>
           </div>

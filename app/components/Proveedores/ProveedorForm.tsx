@@ -10,7 +10,7 @@ import { priceConfidenceLabels, vendorAvailabilityLabels, vendorStatusLabels } f
 interface ProveedorFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (vendor: Omit<Vendor, "id"> & { id?: string }) => void;
+  onSave: (vendor: Omit<Vendor, "id"> & { id?: string }, imageFiles: File[]) => void;
   vendor?: Vendor;
 }
 
@@ -64,6 +64,7 @@ export function ProveedorForm({ isOpen, onClose, onSave, vendor }: ProveedorForm
   const [lng, setLng] = useState<number | undefined>(undefined);
   const [googlePlaceId, setGooglePlaceId] = useState("");
   const [imagesInput, setImagesInput] = useState("");
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
 
   useEffect(() => {
     if (vendor) {
@@ -101,6 +102,7 @@ export function ProveedorForm({ isOpen, onClose, onSave, vendor }: ProveedorForm
       setLng(vendor.lng);
       setGooglePlaceId(vendor.googlePlaceId || "");
       setImagesInput((vendor.images || []).join("\n"));
+      setImageFiles([]);
 
       const matchedZone = zonas.find((zone) => zone.label === vendor.region || zone.provincia === vendor.region || zone.provincia === vendor.province);
       if (matchedZone) setZoneId(matchedZone.id);
@@ -139,6 +141,7 @@ export function ProveedorForm({ isOpen, onClose, onSave, vendor }: ProveedorForm
       setNotesInternal("");
       setGooglePlaceId("");
       setImagesInput("");
+      setImageFiles([]);
       setLat(defaultZone.center.lat);
       setLng(defaultZone.center.lng);
     }
@@ -201,7 +204,7 @@ export function ProveedorForm({ isOpen, onClose, onSave, vendor }: ProveedorForm
       lng: lng ? Number(lng) : undefined,
       googlePlaceId: googlePlaceId.trim() || undefined,
       images: images.length > 0 ? images : undefined
-    });
+    }, imageFiles);
     onClose();
   };
 
@@ -399,6 +402,21 @@ export function ProveedorForm({ isOpen, onClose, onSave, vendor }: ProveedorForm
             placeholder="Pega una URL de imagen por linea. Se usaran como galeria si Google Places no esta configurado."
             style={{ width: "100%", minHeight: "74px", padding: "8px 10px", border: "1px solid var(--line)", borderRadius: "8px", fontFamily: "inherit", resize: "vertical" }}
           />
+        </label>
+
+        <label style={fieldStyle}>
+          Subir imagenes del proveedor
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(event) => setImageFiles(Array.from(event.target.files || []))}
+          />
+          {imageFiles.length > 0 && (
+            <span style={{ color: "var(--slate-grey)", fontSize: "12px", fontWeight: 500 }}>
+              {imageFiles.length} imagen{imageFiles.length === 1 ? "" : "es"} preparada{imageFiles.length === 1 ? "" : "s"} para subir a Firebase Storage.
+            </span>
+          )}
         </label>
 
         <label className="check-row" style={{ flexDirection: "row", gap: "10px", alignItems: "center", textTransform: "none" }}>
