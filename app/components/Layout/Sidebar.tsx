@@ -41,12 +41,13 @@ export function Sidebar({ activeTab, setActiveTab, minimized, setMinimized }: Si
         <div className="brand-mark">NW</div>
         {!minimized && (
           <div>
-            <h1 style={{ fontSize: "18px", margin: 0, whiteSpace: "nowrap" }}>Nomad Weddings</h1>
+            <h1>Nomad</h1>
+            <span>Weddings Ops</span>
           </div>
         )}
       </div>
 
-      <nav className="nav-list" aria-label="Secciones" style={{ marginTop: "24px" }}>
+      <nav className="nav-list" aria-label="Secciones">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (

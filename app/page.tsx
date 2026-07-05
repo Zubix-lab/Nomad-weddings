@@ -526,18 +526,17 @@ export default function Home() {
             onOpenFinance={() => openFinance()}
           />
           <div className="screen-grid desktop-dashboard">
-            {/* 1. Header Banner */}
             <div className="dashboard-hero">
               <div>
-                <h2 style={{ fontFamily: '"Source Serif 4", Georgia, serif', fontSize: "28px", color: "var(--primary)", margin: "0 0 6px 0" }}>Nomad Weddings Workspace</h2>
-                <p style={{ margin: 0, color: "var(--slate-grey)", fontSize: "14px" }}>Crea una boda, completa la pareja y gestiona su roadmap Notion hasta el dia B.</p>
+                <span>Weddings Ops</span>
+                <h2>Nomad Weddings Workspace</h2>
+                <p>Crea una boda, completa la pareja y gestiona su roadmap Notion hasta el dia B.</p>
               </div>
-              <button className="primary-button" type="button" onClick={startCreateBoda} style={{ marginLeft: "auto", display: "inline-flex", gap: "7px", alignItems: "center" }}>
+              <button className="desktop-create-wedding-button" type="button" onClick={startCreateBoda}>
                 <Plus size={16} /> Crear boda
               </button>
             </div>
 
-            {/* 2. Metrics (KPIs) */}
             <Metric
               label="Cuentas de boda"
               value={clients.length}
@@ -570,8 +569,7 @@ export default function Home() {
               icon={<ClipboardList size={18} />}
             />
 
-            {/* 3. Wedding project board (Spans 3 columns) */}
-            <section className="panel" style={{ gridColumn: "span 3" }}>
+            <section className="panel desktop-projects-panel">
               <PanelHeader title="Proyectos Notion de bodas" action={<FileText size={18} />} />
               <WeddingProjectsPanel
                 projects={weddingProjects}
@@ -586,17 +584,16 @@ export default function Home() {
               />
             </section>
 
-            {/* 4. Agenda & Alerts Sidebar (Spans 1 column) */}
-            <div style={{ display: "grid", gap: "16px", alignContent: "start" }}>
+            <div className="desktop-side-stack">
               <section className="panel">
                 <PanelHeader title="Proximos Hitos" action={<CalendarDays size={18} />} />
-                <div className="timeline-list" style={{ marginTop: "12px" }}>
+                <div className="timeline-list desktop-timeline-list">
                   {upcomingCalendar.map((item) => (
-                    <div key={item.id} className="timeline-row" style={{ padding: "8px 0" }}>
+                    <div key={item.id} className="timeline-row">
                       <span className={`status-dot ${item.kind}`} />
-                      <div style={{ minWidth: 0 }}>
-                        <strong style={{ fontSize: "13px", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</strong>
-                        <p style={{ margin: "2px 0 0 0", fontSize: "11px", color: "var(--slate-grey)" }}>
+                      <div>
+                        <strong>{item.title}</strong>
+                        <p>
                           {new Date(item.startsAt).toLocaleDateString("es-ES", {
                             day: "2-digit",
                             month: "short"
@@ -614,32 +611,32 @@ export default function Home() {
 
               <section className="panel">
                 <PanelHeader title="Alertas de Coordinacion" action={<AlertTriangle size={18} />} />
-                <div className="alert-list" style={{ marginTop: "12px", display: "grid", gap: "8px", fontSize: "12px" }}>
+                <div className="alert-list desktop-alert-list">
                   {missingServices.slice(0, 3).map((service) => {
                     const ev = events.find((e) => e.id === service.eventId);
                     return (
-                      <p key={service.id} style={{ margin: 0, paddingLeft: "8px", borderLeft: "2px solid var(--secondary)", lineHeight: "1.4" }}>
+                      <p key={service.id}>
                         Falta proveedor para <strong>{service.category}</strong> en {ev?.name || "boda"}.
                       </p>
                     );
                   })}
                   {tasks.filter((t) => t.status === "bloqueada").slice(0, 2).map((task) => (
-                    <p key={task.id} style={{ margin: 0, paddingLeft: "8px", borderLeft: "2px solid var(--error)", lineHeight: "1.4" }}>
+                    <p key={task.id}>
                       Bloqueada: {task.title} (Boda {events.find((e) => e.id === task.eventId)?.name}).
                     </p>
                   ))}
                   {overdueWorkspacePayments.slice(0, 2).map((payment) => (
-                    <p key={payment.id} style={{ margin: 0, paddingLeft: "8px", borderLeft: "2px solid var(--error)", lineHeight: "1.4" }}>
+                    <p key={payment.id}>
                       Pago vencido: <strong>{payment.title}</strong> ({payment.dueDate}).
                     </p>
                   ))}
                   {upcomingWorkspaceReminders.map((block) => (
-                    <p key={block.id} style={{ margin: 0, paddingLeft: "8px", borderLeft: "2px solid var(--secondary)", lineHeight: "1.4" }}>
+                    <p key={block.id}>
                       Aviso Notion: <strong>{block.title}</strong> ({block.alertDate}).
                     </p>
                   ))}
                   {missingServices.length === 0 && tasks.filter((t) => t.status === "bloqueada").length === 0 && overdueWorkspacePayments.length === 0 && upcomingWorkspaceReminders.length === 0 && (
-                    <p style={{ color: "var(--slate-grey)", margin: 0 }}>
+                    <p>
                       Sin alertas pendientes en este momento.
                     </p>
                   )}
@@ -647,8 +644,7 @@ export default function Home() {
               </section>
             </div>
 
-            {/* 5. Agent Demo Panel (Spans 4 columns) */}
-            <div style={{ gridColumn: "span 4" }}>
+            <div className="desktop-agent-panel">
               <AgentDemoPanel activeEventId={activeEvent?.id || ""} leadId={leads[0]?.id || ""} />
             </div>
           </div>
