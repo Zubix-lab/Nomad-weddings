@@ -48,7 +48,6 @@ export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, 
   const [coupleName, setCoupleName] = useState("");
   const [eventName, setEventName] = useState("");
   const [date, setDate] = useState("");
-  const [location, setLocation] = useState("");
   const [region, setRegion] = useState("Pais Vasco");
   const [guests, setGuests] = useState("100");
   const [budget, setBudget] = useState("30000");
@@ -95,7 +94,7 @@ export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, 
       coupleName,
       eventName,
       date,
-      location,
+      location: "",
       region,
       guests: Math.round(parsedGuests),
       budget: parsedBudget,
@@ -122,7 +121,6 @@ export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, 
     setCoupleName("");
     setEventName("");
     setDate("");
-    setLocation("");
     setRegion("Pais Vasco");
     setGuests("100");
     setBudget("30000");
@@ -167,7 +165,7 @@ export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, 
         <div style={{ display: "flex", flex: 1, minWidth: "260px", gap: "8px", position: "relative" }}>
           <input
             type="text"
-            placeholder="Buscar boda por nombre o lugar..."
+            placeholder="Buscar boda por nombre o zona..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{ paddingLeft: "36px" }}
@@ -266,7 +264,7 @@ export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, 
                     >
                       <strong style={{ fontSize: "14px", color: "var(--primary)" }}>{event.name}</strong>
                       <p style={{ margin: 0, fontSize: "11px", color: "var(--slate-grey)", display: "flex", alignItems: "center", gap: "4px" }}>
-                        <MapPin size={10} /> {event.location}
+                        <MapPin size={10} /> {event.location || event.region || "Lugar por definir"}
                       </p>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--slate-grey)", marginTop: "4px" }}>
                         <span>{new Date(event.date).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}</span>
@@ -361,7 +359,7 @@ export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, 
                   >
                     <td style={{ fontWeight: "bold" }}>{event.name}</td>
                     <td>{new Date(event.date).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}</td>
-                    <td>{event.location} ({event.region})</td>
+                    <td>{event.location || "Lugar por definir"} ({event.region})</td>
                     <td>{event.guests}</td>
                     <td style={{ fontWeight: "bold" }}>
                       {new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(event.totalBudget)}
@@ -455,16 +453,6 @@ export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, 
                   </select>
                 </label>
               </div>
-
-              <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
-                Lugar de Celebración (Finca / Espacio)
-                <input
-                  placeholder="Ej. Bodega Lur, Rioja"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
-              </label>
-
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                 <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
                   Nº Estimado de Invitados
@@ -492,18 +480,18 @@ export default function BodasPage({ onSelectEvent, onOpenDetail, activeEventId, 
               {formError && <p className="field-error">{formError}</p>}
 
               <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
-                Estilo y Concepto General
+                Gustos, estilo y concepto inicial
                 <input
-                  placeholder="Ej. Rústico elegante, mesas infinitas, fiesta exterior"
+                  placeholder="Ej. rustico elegante, cena larga, musica en directo, exterior"
                   value={style}
                   onChange={(e) => setStyle(e.target.value)}
                 />
               </label>
 
               <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
-                Preferencias clave de la boda
+                Preferencias clave de la pareja
                 <input
-                  placeholder="Ej. ceremonia exterior, comida local, musica en directo"
+                  placeholder="Ej. comodidad, poca formalidad, experiencia gastronomica"
                   value={weddingPriorities}
                   onChange={(e) => setWeddingPriorities(e.target.value)}
                 />

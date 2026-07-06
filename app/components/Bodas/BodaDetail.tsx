@@ -11,10 +11,11 @@ import {
   Plus,
   MapPin
 } from "lucide-react";
+import { categoriaLabel, categorias, categoriasCompatibles, normalizeCategoriaId } from "@/lib/categorias";
 import { ParejaProfilePanel } from "./ParejaProfile";
 import { ReunionesPanel } from "./ReunionesPanel";
 import { ChecklistPanel } from "./ChecklistPanel";
-import type { EventPhase, EventService, ServiceStatus } from "@/lib/types";
+import type { CalendarKind, EventPhase, EventService, ServiceStatus, Vendor } from "@/lib/types";
 
 interface BodaDetailProps {
   eventId: string;
@@ -27,6 +28,7 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
     events,
     clients,
     vendors,
+    calendarItems,
     eventServices,
     workspaceBlocks,
     checklistItems,
@@ -40,6 +42,7 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
     deleteReunion,
     addChecklistItem,
     deleteChecklistItem,
+    addCalendarItem,
     addEventService,
     updateEventService,
     deleteEventService
@@ -68,6 +71,13 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
   const [serviceFormError, setServiceFormError] = useState("");
   const [serviceCostDrafts, setServiceCostDrafts] = useState<Record<string, string>>({});
   const [serviceCostErrors, setServiceCostErrors] = useState<Record<string, string>>({});
+  const [scheduleTitle, setScheduleTitle] = useState("");
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleStart, setScheduleStart] = useState("");
+  const [scheduleEnd, setScheduleEnd] = useState("");
+  const [scheduleOwner, setScheduleOwner] = useState("Nomad");
+  const [scheduleKind, setScheduleKind] = useState<CalendarKind>("reunion");
+  const [scheduleError, setScheduleError] = useState("");
 
   // Get active wedding/event
   const event = events.find((e) => e.id === eventId) ?? events[0];
@@ -105,6 +115,9 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
   const eventServicesList = eventServices.filter((s) => s.eventId === event.id);
   const missingServices = eventServicesList.filter((s) => !s.vendorId);
   const totalSpend = eventServicesList.reduce((sum, s) => sum + Number(s.estimatedCost), 0);
+  const eventSchedule = calendarItems
+    .filter((item) => item.eventId === event.id)
+    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
 
   // Documents
   const eventDocs = documents.filter((d) => d.eventId === event.id);
@@ -204,6 +217,38 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
     });
   };
 
+  const serviceCategoryLabel = (category: string) => categoriaLabel(category);
+
+  const getCompatibleVendors = (category: string): Vendor[] => {
+    const compatibleCategories = categoriasCompatibles(category).map(normalizeCategoriaId);
+    const matches = vendors.filter((vendor) => compatibleCategories.includes(normalizeCategoriaId(vendor.category)));
+    return matches.length > 0 ? matches : vendors;
+  };
+
+  const handleAddScheduleItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!scheduleTitle.trim() || !scheduleDate || !scheduleStart) {
+      setScheduleError("Titulo, fecha y hora de inicio son obligatorios.");
+      return;
+    }
+    const end = scheduleEnd || scheduleStart;
+    addCalendarItem({
+      eventId: event.id,
+      title: scheduleTitle.trim(),
+      kind: scheduleKind,
+      startsAt: `${scheduleDate}T${scheduleStart}:00`,
+      endsAt: `${scheduleDate}T${end}:00`,
+      owner: scheduleOwner.trim() || "Nomad"
+    });
+    setScheduleTitle("");
+    setScheduleDate("");
+    setScheduleStart("");
+    setScheduleEnd("");
+    setScheduleOwner("Nomad");
+    setScheduleKind("reunion");
+    setScheduleError("");
+  };
+
   const currency = (val: number) => {
     return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(val);
   };
@@ -219,7 +264,7 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
               {event.name} — {client?.coupleName || "Pareja"}
             </h3>
             <p style={{ margin: 0, color: "var(--slate-grey)", fontSize: "14px", display: "flex", alignItems: "center", gap: "4px" }}>
-              <MapPin size={14} /> {event.location} ({event.region})
+              <MapPin size={14} /> {event.location ? `${event.location} (${event.region})` : `Zona aproximada: ${event.region || "por definir"}`}
             </p>
           </div>
           
@@ -289,7 +334,7 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
             <form className="boda-summary-form" onSubmit={handleSaveSummary}>
               <input value={eventNameDraft} onChange={(e) => setEventNameDraft(e.target.value)} placeholder="Nombre de la boda" aria-label="Nombre de la boda" />
               <input type="date" value={eventDateDraft} onChange={(e) => setEventDateDraft(e.target.value)} aria-label="Fecha de la boda" />
-              <input value={eventLocationDraft} onChange={(e) => setEventLocationDraft(e.target.value)} placeholder="Lugar" aria-label="Lugar" />
+              <input value={eventLocationDraft} onChange={(e) => setEventLocationDraft(e.target.value)} placeholder="Lugar definitivo (opcional, cuando este decidido)" aria-label="Lugar definitivo opcional" />
               <select value={eventPhaseDraft} onChange={(e) => setEventPhaseDraft(e.target.value as EventPhase)} aria-label="Fase">
                 <option value="descubrimiento">Descubrimiento</option>
                 <option value="diseno">Diseno</option>
@@ -477,12 +522,12 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
                 </thead>
                 <tbody>
                   {eventServicesList.map((service) => {
-                    const catVendors = vendors.filter((v) => v.category === service.category);
+                    const catVendors = getCompatibleVendors(service.category);
 
                     return (
                       <tr key={service.id}>
                         <td style={{ fontWeight: "bold" }}>
-                          {service.category.charAt(0).toUpperCase() + service.category.slice(1)}
+                          {serviceCategoryLabel(service.category)}
                         </td>
                         <td>
                           <select
@@ -493,7 +538,7 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
                           >
                             <option value="">-- Pendiente de asignar --</option>
                             {catVendors.map((v) => (
-                              <option key={v.id} value={v.id}>{v.name} ({v.region})</option>
+                              <option key={v.id} value={v.id}>{v.name} ({serviceCategoryLabel(v.category)} · {v.region})</option>
                             ))}
                           </select>
                         </td>
@@ -558,22 +603,9 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
                   <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
                     Categoría del Servicio
                     <select value={serviceCategory} onChange={(e) => setServiceCategory(e.target.value)}>
-                      <option value="localizacion">Localización (Fincas)</option>
-                      <option value="restauracion">Catering / Restauración</option>
-                      <option value="decoracion">Decoración general</option>
-                      <option value="floristeria">Floristería</option>
-                      <option value="dj">DJ / Sonido</option>
-                      <option value="musica">Música en directo</option>
-                      <option value="fotografia">Fotografía</option>
-                      <option value="videografia">Videografía</option>
-                      <option value="content-creator">Content Creator</option>
-                      <option value="peluqueria-maquillaje">Peluquería / Maquillaje</option>
-                      <option value="transporte">Transporte / Autobús</option>
-                      <option value="papeleria">Papelería</option>
-                      <option value="reposteria">Repostería</option>
-                      <option value="stands-photocall">Photocall / Stands</option>
-                      <option value="animacion">Animación</option>
-                      <option value="oficial-ceremonia">Oficial de Ceremonia</option>
+                      {categorias.map((category) => (
+                        <option key={category.id} value={category.id}>{category.label}</option>
+                      ))}
                     </select>
                   </label>
 
@@ -581,11 +613,9 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
                     Proveedor Recomendado (Opcional)
                     <select value={serviceVendorId} onChange={(e) => setServiceVendorId(e.target.value)}>
                       <option value="">-- Selecciona un proveedor --</option>
-                      {vendors
-                        .filter((v) => v.category === serviceCategory)
-                        .map((v) => (
-                          <option key={v.id} value={v.id}>{v.name} ({v.region})</option>
-                        ))}
+                      {getCompatibleVendors(serviceCategory).map((v) => (
+                        <option key={v.id} value={v.id}>{v.name} ({serviceCategoryLabel(v.category)} · {v.region})</option>
+                      ))}
                     </select>
                   </label>
 
@@ -636,78 +666,59 @@ export default function BodaDetail({ eventId }: BodaDetailProps) {
           )}
         </div>
       )}
-
       {activeTab === "horario" && (
         <section className="panel full">
           <div className="panel-header">
-            <h3>Cronograma / Runbook del Día B</h3>
+            <div>
+              <p className="eyebrow">Cronograma desde cero</p>
+              <h3>Runbook del día B</h3>
+            </div>
             <div className="panel-action"><CalendarDays size={18} /></div>
           </div>
-          <div style={{ display: "grid", gap: "12px" }}>
+          <div style={{ display: "grid", gap: "16px" }}>
             <p style={{ margin: 0, fontSize: "13px", color: "var(--slate-grey)" }}>
-              Este es el itinerario detallado minuto a minuto para el día B. Sirve para coordinar a los proveedores contratados.
+              Empieza vacío. Añade cada momento cuando exista una decisión real: preparativos, ceremonia, cóctel, banquete, baile, desmontaje o reuniones previas.
             </p>
-            <div style={{ display: "grid", gap: "10px", marginTop: "10px" }}>
-              <div style={{ display: "flex", gap: "12px", padding: "12px", borderLeft: "4px solid var(--primary)", background: "var(--surface-low)", borderRadius: "0 8px 8px 0" }}>
-                <span className="time-badge" style={{ padding: "4px 8px", background: "var(--primary)", borderRadius: "4px", height: "fit-content", fontSize: "11px", fontWeight: "bold" }}>
-                  10:00
-                </span>
-                <div>
-                  <strong style={{ display: "block", fontSize: "14px" }}>Preparativos en el hotel</strong>
-                  <span style={{ fontSize: "12px", color: "var(--slate-grey)" }}>Responsable: Maquillaje y peluquería (Ane Beauty Studio)</span>
-                </div>
-              </div>
 
-              <div style={{ display: "flex", gap: "12px", padding: "12px", borderLeft: "4px solid var(--primary)", background: "var(--surface-low)", borderRadius: "0 8px 8px 0" }}>
-                <span className="time-badge" style={{ padding: "4px 8px", background: "var(--primary)", borderRadius: "4px", height: "fit-content", fontSize: "11px", fontWeight: "bold" }}>
-                  12:30
-                </span>
-                <div>
-                  <strong style={{ display: "block", fontSize: "14px" }}>Montaje de decoración en la Bodega</strong>
-                  <span style={{ fontSize: "12px", color: "var(--slate-grey)" }}>Responsable: Floristería (Floristería Bruma)</span>
-                </div>
-              </div>
+            <form onSubmit={handleAddScheduleItem} className="boda-schedule-form">
+              <input value={scheduleTitle} onChange={(e) => { setScheduleTitle(e.target.value); setScheduleError(""); }} placeholder="Momento o tarea" aria-label="Momento del cronograma" />
+              <input type="date" value={scheduleDate} onChange={(e) => { setScheduleDate(e.target.value); setScheduleError(""); }} aria-label="Fecha" />
+              <input type="time" value={scheduleStart} onChange={(e) => { setScheduleStart(e.target.value); setScheduleError(""); }} aria-label="Hora inicio" />
+              <input type="time" value={scheduleEnd} onChange={(e) => setScheduleEnd(e.target.value)} aria-label="Hora fin" />
+              <select value={scheduleKind} onChange={(e) => setScheduleKind(e.target.value as CalendarKind)} aria-label="Tipo de momento">
+                <option value="reunion">Reunión</option>
+                <option value="visita-tecnica">Visita técnica</option>
+                <option value="pago">Pago</option>
+                <option value="deadline">Deadline</option>
+                <option value="dia-b">Día B</option>
+              </select>
+              <input value={scheduleOwner} onChange={(e) => setScheduleOwner(e.target.value)} placeholder="Responsable" aria-label="Responsable" />
+              <button className="primary-button" type="submit">Añadir momento</button>
+              {scheduleError && <p className="field-error">{scheduleError}</p>}
+            </form>
 
-              <div style={{ display: "flex", gap: "12px", padding: "12px", borderLeft: "4px solid var(--primary)", background: "var(--surface-low)", borderRadius: "0 8px 8px 0" }}>
-                <span className="time-badge" style={{ padding: "4px 8px", background: "var(--primary)", borderRadius: "4px", height: "fit-content", fontSize: "11px", fontWeight: "bold" }}>
-                  16:00
-                </span>
-                <div>
-                  <strong style={{ display: "block", fontSize: "14px" }}>Inicio de Ceremonia Simbólica</strong>
-                  <span style={{ fontSize: "12px", color: "var(--slate-grey)" }}>Oficiante: Hitza Ceremonia · Música: Violín en directo</span>
-                </div>
+            {eventSchedule.length === 0 ? (
+              <div className="empty-state" style={{ minHeight: "180px" }}>
+                Todavia no hay cronograma para esta boda. Crea el primer momento cuando tengais decisiones cerradas.
               </div>
-
-              <div style={{ display: "flex", gap: "12px", padding: "12px", borderLeft: "4px solid var(--primary)", background: "var(--surface-low)", borderRadius: "0 8px 8px 0" }}>
-                <span className="time-badge" style={{ padding: "4px 8px", background: "var(--primary)", borderRadius: "4px", height: "fit-content", fontSize: "11px", fontWeight: "bold" }}>
-                  17:00
-                </span>
-                <div>
-                  <strong style={{ display: "block", fontSize: "14px" }}>Cóctel de Bienvenida</strong>
-                  <span style={{ fontSize: "12px", color: "var(--slate-grey)" }}>Catering Basa · Música de ambiente</span>
-                </div>
+            ) : (
+              <div className="boda-schedule-list">
+                {eventSchedule.map((item) => {
+                  const start = new Date(item.startsAt);
+                  const end = new Date(item.endsAt);
+                  return (
+                    <article key={item.id} className="boda-schedule-row">
+                      <span className="time-badge">{start.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}</span>
+                      <div>
+                        <strong>{item.title}</strong>
+                        <p>{start.toLocaleDateString("es-ES")} · {end.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })} · {item.owner}</p>
+                      </div>
+                      <small>{item.kind}</small>
+                    </article>
+                  );
+                })}
               </div>
-
-              <div style={{ display: "flex", gap: "12px", padding: "12px", borderLeft: "4px solid var(--primary)", background: "var(--surface-low)", borderRadius: "0 8px 8px 0" }}>
-                <span className="time-badge" style={{ padding: "4px 8px", background: "var(--primary)", borderRadius: "4px", height: "fit-content", fontSize: "11px", fontWeight: "bold" }}>
-                  19:00
-                </span>
-                <div>
-                  <strong style={{ display: "block", fontSize: "14px" }}>Banquete / Cena</strong>
-                  <span style={{ fontSize: "12px", color: "var(--slate-grey)" }}>Servicio de mesa · Discursos familiares</span>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: "12px", padding: "12px", borderLeft: "4px solid var(--primary)", background: "var(--surface-low)", borderRadius: "0 8px 8px 0" }}>
-                <span className="time-badge" style={{ padding: "4px 8px", background: "var(--primary)", borderRadius: "4px", height: "fit-content", fontSize: "11px", fontWeight: "bold" }}>
-                  22:00
-                </span>
-                <div>
-                  <strong style={{ display: "block", fontSize: "14px" }}>Primer baile y apertura de barra libre</strong>
-                  <span style={{ fontSize: "12px", color: "var(--slate-grey)" }}>DJ (Sonido Norte) · Fotomatón activo</span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </section>
       )}

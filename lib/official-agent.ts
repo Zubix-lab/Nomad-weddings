@@ -1,4 +1,5 @@
 import { readApiCollection } from "@/lib/api-firestore";
+import { categoriasCompatibles, normalizeCategoriaId } from "@/lib/categorias";
 import { scoreLead } from "@/lib/lead-scoring";
 import type { CalendarItem, Event, EventService, Lead, Task, Vendor, VendorMatch, VendorPrice } from "@/lib/types";
 
@@ -39,8 +40,10 @@ export async function getOfficialVendorMatches(eventId: string, category: string
   const event = events.find((item) => item.id === eventId);
   if (!event) return null;
 
+  const compatibleCategories = categoriasCompatibles(category).map(normalizeCategoriaId);
+
   return vendors
-    .filter((vendor) => vendor.category === category)
+    .filter((vendor) => compatibleCategories.includes(normalizeCategoriaId(vendor.category)))
     .map((vendor) => {
       const price = vendorPrices.find((item) => item.vendorId === vendor.id);
       const reasons: string[] = [];

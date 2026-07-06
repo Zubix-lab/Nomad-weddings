@@ -58,7 +58,6 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
   // Wedding project states
   const [weddingEventName, setWeddingEventName] = useState("");
   const [weddingDate, setWeddingDate] = useState("");
-  const [weddingLocation, setWeddingLocation] = useState("");
   const [weddingRegion, setWeddingRegion] = useState("Pais Vasco");
   const [weddingGuests, setWeddingGuests] = useState("100");
   const [weddingBudget, setWeddingBudget] = useState("30000");
@@ -113,7 +112,6 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
     setWeddingClient(client);
     setWeddingEventName(`Boda de ${client.coupleName}`);
     setWeddingDate("");
-    setWeddingLocation("");
     setWeddingRegion("Pais Vasco");
     setWeddingGuests("100");
     setWeddingBudget("30000");
@@ -184,7 +182,7 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
       coupleName: weddingClient.coupleName,
       eventName: weddingEventName,
       date: weddingDate,
-      location: weddingLocation,
+      location: "",
       region: weddingRegion,
       guests: Math.round(parsedGuests),
       budget: parsedBudget,
@@ -496,7 +494,7 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
           <div style={{ padding: "12px", background: "var(--surface-low)", borderRadius: "8px", border: "1px solid var(--outline-variant)", display: "grid", gap: "6px" }}>
             <strong style={{ color: "var(--primary)", fontSize: "14px" }}>{weddingClient?.coupleName || "Cuenta cliente"}</strong>
             <p style={{ margin: 0, color: "var(--slate-grey)", fontSize: "13px", lineHeight: 1.45 }}>
-              Este paso crea la boda, su ficha operativa, perfiles de pareja, roadmap Notion, pagos iniciales y agenda base.
+              Este paso crea la boda desde cero: ficha operativa y perfiles de pareja. Los servicios, pagos, agenda y cronograma se construyen despues paso a paso.
             </p>
           </div>
 
@@ -518,11 +516,6 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
               </select>
             </label>
           </div>
-
-          <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
-            Lugar o finca
-            <input placeholder="Ej. Bodega, finca, restaurante..." value={weddingLocation} onChange={(eventInput) => setWeddingLocation(eventInput.target.value)} />
-          </label>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
             <label style={{ display: "grid", gap: "6px", color: "var(--muted)", fontSize: "13px", fontWeight: "700" }}>
@@ -573,7 +566,7 @@ export default function ClientesPage({ onSelectEvent, setActiveTab }: ClientesPa
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
             <button className="secondary-button" type="button" onClick={() => setIsWeddingFormOpen(false)}>Cancelar</button>
-            <button className="primary-button" type="submit">Crear proyecto completo</button>
+            <button className="primary-button" type="submit">Crear boda desde cero</button>
           </div>
         </form>
       </Modal>

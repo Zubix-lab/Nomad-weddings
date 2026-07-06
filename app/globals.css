@@ -734,6 +734,53 @@ select {
   min-height: 42px;
 }
 
+.boda-schedule-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) repeat(3, minmax(112px, 0.7fr)) minmax(140px, 0.8fr) minmax(140px, 0.8fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+  background: var(--surface-low);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.boda-schedule-form .field-error {
+  grid-column: 1 / -1;
+}
+
+.boda-schedule-list {
+  display: grid;
+  gap: 10px;
+}
+
+.boda-schedule-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.boda-schedule-row strong {
+  color: var(--primary);
+}
+
+.boda-schedule-row p {
+  margin: 3px 0 0;
+  color: var(--slate-grey);
+  font-size: 12px;
+}
+
+.boda-schedule-row small {
+  color: var(--slate-grey);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .field-error {
   grid-column: 1 / -1;
   margin: -2px 0 0;
@@ -4406,6 +4453,15 @@ nextjs-portal,
 
   .boda-summary-form {
     padding: 10px;
+  }
+
+  .boda-schedule-form {
+    grid-template-columns: 1fr;
+  }
+
+  .boda-schedule-row {
+    grid-template-columns: 1fr;
+    align-items: start;
   }
 
   .vendor-filter-panel {
