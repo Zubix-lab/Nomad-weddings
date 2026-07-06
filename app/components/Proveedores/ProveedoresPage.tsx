@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import { useApp } from "@/context/AppContext";
 import { CheckCircle2, Globe, Grid, ImageIcon, List, Mail, Map, MapPin, Phone, Plus, Search, Star, StickyNote } from "lucide-react";
@@ -37,48 +37,12 @@ const TARGETS = {
 
 function VendorCardImage({ vendor, imageUrl, priority }: { vendor: Vendor; imageUrl: string; priority?: boolean }) {
   const [hasFailed, setHasFailed] = useState(false);
-  const [googleImageUrl, setGoogleImageUrl] = useState("");
-  const [googleLookupDone, setGoogleLookupDone] = useState(false);
-  const resolvedImageUrl = imageUrl || googleImageUrl;
-
-  useEffect(() => {
-    setHasFailed(false);
-    setGoogleImageUrl("");
-    setGoogleLookupDone(false);
-
-    if (imageUrl) return;
-
-    const controller = new AbortController();
-    const params = new URLSearchParams({
-      name: vendor.name,
-      region: vendor.region
-    });
-
-    if (vendor.googlePlaceId) params.set("placeId", vendor.googlePlaceId);
-    if (vendor.lat) params.set("lat", String(vendor.lat));
-    if (vendor.lng) params.set("lng", String(vendor.lng));
-
-    fetch(`/api/google/places/vendor-media?${params.toString()}`, { signal: controller.signal })
-      .then((response) => response.json())
-      .then((data: { photos?: Array<{ url?: string }> }) => {
-        const firstPhoto = data.photos?.find((photo) => photo.url)?.url || "";
-        if (firstPhoto) setGoogleImageUrl(firstPhoto);
-      })
-      .catch(() => {
-        // The card can still render without Google Places configured.
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setGoogleLookupDone(true);
-      });
-
-    return () => controller.abort();
-  }, [imageUrl, vendor.googlePlaceId, vendor.lat, vendor.lng, vendor.name, vendor.region]);
 
   return (
     <div className="vendor-card-media">
-      {resolvedImageUrl && !hasFailed ? (
+      {imageUrl && !hasFailed ? (
         <Image
-          src={resolvedImageUrl}
+          src={imageUrl}
           alt={`${vendor.name} imagen real`}
           fill
           unoptimized
@@ -90,7 +54,7 @@ function VendorCardImage({ vendor, imageUrl, priority }: { vendor: Vendor; image
       ) : (
         <div className="vendor-image-placeholder">
           <ImageIcon size={22} />
-          <span>{googleLookupDone || imageUrl ? "Imagen pendiente" : "Buscando imagen"}</span>
+          <span>Imagen pendiente</span>
         </div>
       )}
     </div>
@@ -111,7 +75,7 @@ export default function ProveedoresPage() {
     persistenceError
   } = useApp();
 
-  const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("list");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("todas");
   const [selectedRegion, setSelectedRegion] = useState("todas");
@@ -441,6 +405,13 @@ export default function ProveedoresPage() {
           </select>
         </div>
       </div>
+
+      {vendors.length > 0 && (
+        <div className="vendor-results-summary">
+          <strong>Mostrando {filteredVendors.length} de {vendors.length} proveedores</strong>
+          <span>{filteredVendors.length === 0 ? "Revisa los filtros activos." : "Los resultados aparecen debajo en la vista seleccionada."}</span>
+        </div>
+      )}
 
       {filteredVendors.length === 0 ? (
         <div className="empty-state" style={{ display: "grid", gap: "10px", justifyItems: "center" }}>

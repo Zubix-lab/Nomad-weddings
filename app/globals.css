@@ -2998,6 +2998,23 @@ nextjs-portal,
   box-shadow: var(--soft-shadow);
 }
 
+.vendor-results-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface-low);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--primary);
+}
+
+.vendor-results-summary span {
+  color: var(--slate-grey);
+  font-size: 12px;
+}
+
 .data-source-banner {
   display: flex;
   align-items: center;
