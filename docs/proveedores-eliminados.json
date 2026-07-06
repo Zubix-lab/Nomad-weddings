@@ -1,0 +1,247 @@
+[
+  {
+    "id": "vendor-014",
+    "name": "Finca Osorio",
+    "category": "localizacion",
+    "region": "Gran Canaria",
+    "reason": "Finca real/natural, pero no validada como proveedor operativo de bodas."
+  },
+  {
+    "id": "vendor-026",
+    "name": "Catering Volcán & Fuego",
+    "category": "restauracion",
+    "region": "Gran Canaria",
+    "reason": "No se localiza como Catering Volc?n & Fuego operativo en Canarias; resultados ajenos."
+  },
+  {
+    "id": "vendor-027",
+    "name": "Restaurante El Jardín Canario",
+    "category": "restauracion",
+    "region": "Gran Canaria",
+    "reason": "Dominio caducado/en venta y sin se?al actual fiable como proveedor de bodas."
+  },
+  {
+    "id": "vendor-032",
+    "name": "The Concept Tenerife",
+    "category": "decoracion",
+    "region": "Tenerife",
+    "reason": "No se localiza The Concept Tenerife como proveedor nupcial verificable."
+  },
+  {
+    "id": "vendor-033",
+    "name": "Floristería Bruma",
+    "category": "floristeria",
+    "region": "Gipuzkoa",
+    "reason": "No se localiza Florister?a Bruma como proveedor real en Donostia."
+  },
+  {
+    "id": "vendor-035",
+    "name": "Flor de Arena Deco",
+    "category": "floristeria",
+    "region": "Gran Canaria",
+    "reason": "No se localiza Flor de Arena Deco como proveedor real verificable."
+  },
+  {
+    "id": "vendor-036",
+    "name": "Goretti Floristería",
+    "category": "floristeria",
+    "region": "Tenerife",
+    "reason": "Los resultados apuntan a otro pa?s; no validado como proveedor de Tenerife."
+  },
+  {
+    "id": "vendor-037",
+    "name": "Gipuzkoa String Quartet",
+    "category": "musica",
+    "region": "Gipuzkoa",
+    "reason": "No se localiza como grupo musical/proveedor de bodas real."
+  },
+  {
+    "id": "vendor-039",
+    "name": "Trío Bellini",
+    "category": "musica",
+    "region": "Tenerife",
+    "reason": "No se localiza como tr?o musical de bodas en Tenerife."
+  },
+  {
+    "id": "vendor-040",
+    "name": "Grupo La Movida",
+    "category": "musica",
+    "region": "Gran Canaria",
+    "reason": "URL en 404 y sin se?al v?lida de proveedor en Gran Canaria."
+  },
+  {
+    "id": "vendor-043",
+    "name": "DJ Octavio",
+    "category": "dj",
+    "region": "Gran Canaria",
+    "reason": "No se localiza como DJ de bodas operativo en Gran Canaria."
+  },
+  {
+    "id": "vendor-044",
+    "name": "Mas Pro Canarias",
+    "category": "dj",
+    "region": "Tenerife",
+    "reason": "Dominio con contenido ajeno/comprometido y sin fuente nupcial v?lida."
+  },
+  {
+    "id": "vendor-045",
+    "name": "Aritz Photography",
+    "category": "fotografia",
+    "region": "Gipuzkoa",
+    "reason": "No se localiza Aritz Photography como proveedor de bodas verificable."
+  },
+  {
+    "id": "vendor-046",
+    "name": "Biderbost Photo",
+    "category": "fotografia",
+    "region": "Gipuzkoa",
+    "reason": "Biderbost Photo es real, pero especializado en arquitectura/interiores, no proveedor de bodas."
+  },
+  {
+    "id": "vendor-048",
+    "name": "El Creador de Recuerdos",
+    "category": "fotografia",
+    "region": "Tenerife",
+    "reason": "Nombre ambiguo; no se localiza proveedor verificable en Tenerife."
+  },
+  {
+    "id": "vendor-049",
+    "name": "Hilario Films",
+    "category": "videografia",
+    "region": "Gipuzkoa",
+    "reason": "No se localiza Hilario Films como vide?grafo de bodas verificable en Gipuzkoa."
+  },
+  {
+    "id": "vendor-051",
+    "name": "Rec & Roll Wedding Cinema",
+    "category": "videografia",
+    "region": "Gran Canaria",
+    "reason": "Proveedor localizado fuera del mercado objetivo; no coincide con Gran Canaria."
+  },
+  {
+    "id": "vendor-052",
+    "name": "Yael Fotografía y Video",
+    "category": "videografia",
+    "region": "Tenerife",
+    "reason": "No se localiza Yael Fotograf?a y Video como proveedor de Tenerife."
+  },
+  {
+    "id": "vendor-053",
+    "name": "Wedding Content Creator Donostia",
+    "category": "content-creator",
+    "region": "Gipuzkoa",
+    "reason": "Nombre gen?rico sin proveedor verificable."
+  },
+  {
+    "id": "vendor-054",
+    "name": "Canarias Wedding Social",
+    "category": "content-creator",
+    "region": "Gran Canaria",
+    "reason": "Nombre gen?rico sin proveedor verificable."
+  },
+  {
+    "id": "vendor-055",
+    "name": "Ane Beauty Studio",
+    "category": "peluqueria-maquillaje",
+    "region": "Gipuzkoa",
+    "reason": "No se localiza como estudio de belleza nupcial verificable."
+  },
+  {
+    "id": "vendor-056",
+    "name": "Noventa y Dos Estilistas",
+    "category": "peluqueria-maquillaje",
+    "region": "Gipuzkoa",
+    "reason": "No se localiza como estilistas nupciales verificables."
+  },
+  {
+    "id": "vendor-058",
+    "name": "Marta Alonso Makeup",
+    "category": "peluqueria-maquillaje",
+    "region": "Tenerife",
+    "reason": "Resultados no coinciden con maquilladora de bodas en Tenerife."
+  },
+  {
+    "id": "vendor-059",
+    "name": "Autobuses Garayar",
+    "category": "transporte",
+    "region": "Gipuzkoa",
+    "reason": "Empresa localizada como extinguida/inactiva."
+  },
+  {
+    "id": "vendor-061",
+    "name": "Guaguas Melenara",
+    "category": "transporte",
+    "region": "Gran Canaria",
+    "reason": "Transporte p?blico/local; no validado como proveedor privado de bodas."
+  },
+  {
+    "id": "vendor-064",
+    "name": "Sorpresa Invitaciones",
+    "category": "papeleria",
+    "region": "Gipuzkoa",
+    "reason": "No se localiza proveedor de invitaciones con ese nombre."
+  },
+  {
+    "id": "vendor-065",
+    "name": "La Tinta Fina Tenerife",
+    "category": "papeleria",
+    "region": "Tenerife",
+    "reason": "No se localiza proveedor nupcial con ese nombre en Tenerife."
+  },
+  {
+    "id": "vendor-069",
+    "name": "Photocall Donosti",
+    "category": "stands-photocall",
+    "region": "Gipuzkoa",
+    "reason": "No se localiza proveedor real con ese nombre."
+  },
+  {
+    "id": "vendor-070",
+    "name": "Click & Fun Fotomatones",
+    "category": "stands-photocall",
+    "region": "Gran Canaria",
+    "reason": "No se localiza Click & Fun Fotomatones; resultados corresponden a otros proveedores."
+  },
+  {
+    "id": "vendor-071",
+    "name": "Fun Pic Canarias",
+    "category": "stands-photocall",
+    "region": "Tenerife",
+    "reason": "No se localiza proveedor real con ese nombre en Canarias."
+  },
+  {
+    "id": "vendor-072",
+    "name": "Ttipia Animación",
+    "category": "animacion",
+    "region": "Gipuzkoa",
+    "reason": "Empresa cultural real, pero no validada como proveedor de bodas."
+  },
+  {
+    "id": "vendor-073",
+    "name": "El Patio Animación",
+    "category": "animacion",
+    "region": "Gran Canaria",
+    "reason": "No se localiza como proveedor nupcial operativo en Gran Canaria."
+  },
+  {
+    "id": "vendor-075",
+    "name": "Egoitz Master of Ceremonies",
+    "category": "oficial-ceremonia",
+    "region": "Gipuzkoa",
+    "reason": "No se localiza proveedor real; resultados son parejas llamadas Egoitz."
+  },
+  {
+    "id": "vendor-076",
+    "name": "Oficiantes de Boda Canarias",
+    "category": "oficial-ceremonia",
+    "region": "Gran Canaria",
+    "reason": "Nombre gen?rico; no se localiza empresa concreta con ese nombre."
+  },
+  {
+    "id": "vendor-077",
+    "name": "Peluquería Isaran",
+    "category": "peluqueria-maquillaje",
+    "region": "Gipuzkoa",
+    "reason": "No se localiza peluquer?a verificable con fuente suficiente."
+  }
+]
