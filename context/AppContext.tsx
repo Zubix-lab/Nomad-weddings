@@ -34,6 +34,7 @@ import {
   type AppCollectionKey,
   type AppCollections
 } from "@/lib/firestore-store";
+import { officialVendorPriceSeed, officialVendorSeed } from "@/lib/vendor-seed";
 
 type PersistenceMode = "firestore" | "local";
 type PersistenceStatus = "connecting" | "ready" | "error";
@@ -58,6 +59,11 @@ export interface BackupPayload {
 export interface ImportBackupResult {
   importedCollections: number;
   importedRecords: number;
+}
+
+export interface SeedVendorsResult {
+  vendorsAdded: number;
+  pricesAdded: number;
 }
 
 type Action =
@@ -255,6 +261,7 @@ interface AppContextValue extends AppState {
   deleteCompanyFinanceRecord: (id: string) => void;
   generateId: () => string;
   resetToSeed: () => void;
+  seedOfficialVendors: () => SeedVendorsResult;
   exportBackup: () => BackupPayload;
   importBackup: (payload: unknown) => ImportBackupResult;
 }
@@ -389,6 +396,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateCompanyFinanceRecord: (r) => update("companyFinanceRecords", r as unknown as IdentifiableRecord),
     deleteCompanyFinanceRecord: (id) => remove("companyFinanceRecords", id),
     generateId,
+    seedOfficialVendors: () => {
+      const existingVendorIds = new Set(state.vendors.map((vendor) => vendor.id));
+      const existingPriceIds = new Set(state.vendorPrices.map((price) => price.id));
+      const vendorsToAdd = officialVendorSeed.filter((vendor) => !existingVendorIds.has(vendor.id));
+      const pricesToAdd = officialVendorPriceSeed.filter((price) => !existingPriceIds.has(price.id));
+
+      vendorsToAdd.forEach((vendor) => {
+        const item = vendor as unknown as IdentifiableRecord;
+        dispatch({ type: "ADD", collection: "vendors", item });
+        persist("vendors", item);
+      });
+
+      pricesToAdd.forEach((price) => {
+        const item = price as unknown as IdentifiableRecord;
+        dispatch({ type: "ADD", collection: "vendorPrices", item });
+        persist("vendorPrices", item);
+      });
+
+      return {
+        vendorsAdded: vendorsToAdd.length,
+        pricesAdded: pricesToAdd.length
+      };
+    },
     exportBackup: () => ({
       app: "nomad-weddings",
       version: 1,

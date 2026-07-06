@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useApp } from "@/context/AppContext";
 import { CheckCircle2, Globe, Grid, ImageIcon, List, Mail, Map, MapPin, Phone, Plus, Search, Star, StickyNote } from "lucide-react";
@@ -37,12 +37,48 @@ const TARGETS = {
 
 function VendorCardImage({ vendor, imageUrl, priority }: { vendor: Vendor; imageUrl: string; priority?: boolean }) {
   const [hasFailed, setHasFailed] = useState(false);
+  const [googleImageUrl, setGoogleImageUrl] = useState("");
+  const [googleLookupDone, setGoogleLookupDone] = useState(false);
+  const resolvedImageUrl = imageUrl || googleImageUrl;
+
+  useEffect(() => {
+    setHasFailed(false);
+    setGoogleImageUrl("");
+    setGoogleLookupDone(false);
+
+    if (imageUrl) return;
+
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      name: vendor.name,
+      region: vendor.region
+    });
+
+    if (vendor.googlePlaceId) params.set("placeId", vendor.googlePlaceId);
+    if (vendor.lat) params.set("lat", String(vendor.lat));
+    if (vendor.lng) params.set("lng", String(vendor.lng));
+
+    fetch(`/api/google/places/vendor-media?${params.toString()}`, { signal: controller.signal })
+      .then((response) => response.json())
+      .then((data: { photos?: Array<{ url?: string }> }) => {
+        const firstPhoto = data.photos?.find((photo) => photo.url)?.url || "";
+        if (firstPhoto) setGoogleImageUrl(firstPhoto);
+      })
+      .catch(() => {
+        // The card can still render without Google Places configured.
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setGoogleLookupDone(true);
+      });
+
+    return () => controller.abort();
+  }, [imageUrl, vendor.googlePlaceId, vendor.lat, vendor.lng, vendor.name, vendor.region]);
 
   return (
     <div className="vendor-card-media">
-      {imageUrl && !hasFailed ? (
+      {resolvedImageUrl && !hasFailed ? (
         <Image
-          src={imageUrl}
+          src={resolvedImageUrl}
           alt={`${vendor.name} imagen real`}
           fill
           unoptimized
@@ -54,7 +90,7 @@ function VendorCardImage({ vendor, imageUrl, priority }: { vendor: Vendor; image
       ) : (
         <div className="vendor-image-placeholder">
           <ImageIcon size={22} />
-          <span>Imagen pendiente</span>
+          <span>{googleLookupDone || imageUrl ? "Imagen pendiente" : "Buscando imagen"}</span>
         </div>
       )}
     </div>
@@ -62,7 +98,18 @@ function VendorCardImage({ vendor, imageUrl, priority }: { vendor: Vendor; image
 }
 
 export default function ProveedoresPage() {
-  const { vendors, vendorPrices, addVendor, updateVendor, deleteVendor, uploadVendorImages, persistenceMode, persistenceStatus, persistenceError } = useApp();
+  const {
+    vendors,
+    vendorPrices,
+    addVendor,
+    updateVendor,
+    deleteVendor,
+    uploadVendorImages,
+    seedOfficialVendors,
+    persistenceMode,
+    persistenceStatus,
+    persistenceError
+  } = useApp();
 
   const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
   const [searchTerm, setSearchTerm] = useState("");
@@ -81,6 +128,7 @@ export default function ProveedoresPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editVendor, setEditVendor] = useState<Vendor | undefined>(undefined);
   const [uploadStatus, setUploadStatus] = useState("");
+  const [seedStatus, setSeedStatus] = useState("");
 
   const provinceOptions = useMemo(
     () => Array.from(new Set(vendors.map(getVendorProvince))).sort((a, b) => a.localeCompare(b, "es")),
@@ -215,6 +263,17 @@ export default function ProveedoresPage() {
     }
   };
 
+  const handleLoadStarterVendors = () => {
+    const result = seedOfficialVendors();
+    const destination = persistenceMode === "firestore" ? "Firestore" : "modo local";
+    setSeedStatus(
+      result.vendorsAdded === 0 && result.pricesAdded === 0
+        ? "La base inicial ya estaba cargada."
+        : `Base inicial cargada en ${destination}: ${result.vendorsAdded} proveedores y ${result.pricesAdded} tarifas.`
+    );
+    window.setTimeout(() => setSeedStatus(""), 5000);
+  };
+
   const openVendor = (vendor: Vendor) => {
     setActiveVendor(vendor);
     setIsDetailOpen(true);
@@ -265,6 +324,7 @@ export default function ProveedoresPage() {
           </span>
         </div>
         {uploadStatus && <div className="data-source-banner connected"><strong>Imagenes</strong><span>{uploadStatus}</span></div>}
+        {seedStatus && <div className="data-source-banner connected"><strong>Base inicial</strong><span>{seedStatus}</span></div>}
 
         <div className="vendor-search-row">
           <div className="vendor-search-box">
@@ -383,7 +443,20 @@ export default function ProveedoresPage() {
       </div>
 
       {filteredVendors.length === 0 ? (
-        <div className="empty-state">No se encontraron proveedores con los filtros actuales.</div>
+        <div className="empty-state" style={{ display: "grid", gap: "10px", justifyItems: "center" }}>
+          <span>
+            {vendors.length === 0
+              ? persistenceMode === "firestore"
+                ? "Firestore no tiene proveedores cargados todavía."
+                : "Todavía no hay proveedores cargados en este entorno local."
+              : "No se encontraron proveedores con los filtros actuales."}
+          </span>
+          {vendors.length === 0 && (
+            <button className="primary-button" type="button" onClick={handleLoadStarterVendors}>
+              Cargar base inicial
+            </button>
+          )}
+        </div>
       ) : viewMode === "map" ? (
         <div style={{ height: "550px", border: "1px solid var(--line)", borderRadius: "8px", overflow: "hidden" }}>
           <MapaProveedores
